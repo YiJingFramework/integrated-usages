@@ -15,3 +15,5 @@ The use cases are put in directory `cases`. Each use case includes a Visual Stud
 **用例 Cases**
 
 - [梅花时间卦生成及查询](./cases/梅花时间卦生成及查询) Generating the time based hexagrams in plum blossom numerology and looking them up in Zhouyi
+
+- [每日一卦](./cases/每日一卦) A Hexagram Per Day
