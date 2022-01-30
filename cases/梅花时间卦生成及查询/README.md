@@ -4,9 +4,7 @@
 
 This use case generates the time based hexagrams in plum blossom numerology and looks them up in Zhouyi.
 
----
-
-**使用的包 Used Packages**
+## 使用的包 Used Packages
 
 所有包都可以在 [nuget.org](https://www.nuget.org/) 找到。
 
@@ -19,9 +17,7 @@ All the packages could be found on [nuget.org](https://www.nuget.org/).
 - YiJingFramework.References.Zhouyi
 - YiJingFramework.References.Zhouyi.Zhuan
 
----
-
-**代码 Codes**
+## 代码 Codes
 ```csharp
 using com.nlf.calendar;
 using System.Diagnostics;
@@ -198,7 +194,7 @@ Console.WriteLine($"象曰：{xiang[changingLine]}");
 #endregion
 ```
 
-**示例输出 Sample Output**
+## 示例输出 Sample Output
 
 (2022.1.30 17:26)
 
