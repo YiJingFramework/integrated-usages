@@ -175,16 +175,16 @@ Console.Write($"得{originalHexagram.Name}之{changedHexagram.Name}，");
 // Console.Write($"It's {originalHexagram.Name} changing to {changedHexagram.Name}, ");
 
 ZhouyiTrigram overlappedUpper = overlappedHexagram.UpperTrigram;
-ZhouyiTrigram overlappedLower = overlappedHexagram.UpperTrigram;
+ZhouyiTrigram overlappedLower = overlappedHexagram.LowerTrigram;
 if (overlappedUpper == overlappedLower)
-{
-    Console.WriteLine($"互{overlappedUpper.Name}{overlappedUpper.Name}。");
-    // Console.Write($"and {overlappedUpper.Name} with {overlappedLower.Name} as the overlapped.");
-}
-else
 {
     Console.WriteLine($"互重{overlappedUpper.Name}。");
     // Console.Write($"and doubled {overlappedUpper.Name} as the overlapped.");
+}
+else
+{
+    Console.WriteLine($"互{overlappedUpper.Name}{overlappedLower.Name}。");
+    // Console.Write($"and {overlappedUpper.Name} with {overlappedLower.Name} as the overlapped.");
 }
 
 Console.WriteLine($"易曰：{changingLine.LineText}");
@@ -196,7 +196,7 @@ Console.WriteLine($"象曰：{xiang[changingLine]}");
 
 ## 示例输出 Sample Output
 
-(2022.1.30 17:26)
+(2022.1.30 17:41)
 
 ```plain
 二〇二一年腊月廿八 辛丑(牛)年 辛丑(牛)月 癸未(羊)日 酉(鸡)时 纳音[壁上土 壁上土 杨柳木 石榴木] 星期日 西方白虎 星宿[昴日鸡](凶) 彭祖百忌[癸不词讼理弱敌强 未不服药毒气入肠] 喜神方位[巽](东南) 阳贵神方位[巽](东南) 阴贵神方位[震](正东) 福神方 位[艮](东北) 财神方位[离](正南) 冲[(丁丑)牛] 煞[西]
@@ -225,7 +225,7 @@ Console.WriteLine($"象曰：{xiang[changingLine]}");
 -- --
 -----
 
-得随之屯，互巽巽。
+得随之屯，互巽艮。
 易曰：随有获，贞凶。有孚在道，以明，何咎？
 象曰：“随有获”，其义凶也。“有孚在道”，明功也。
 ```

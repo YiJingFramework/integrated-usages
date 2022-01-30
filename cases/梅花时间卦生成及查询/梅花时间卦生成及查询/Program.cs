@@ -154,16 +154,16 @@ Console.Write($"得{originalHexagram.Name}之{changedHexagram.Name}，");
 // Console.Write($"It's {originalHexagram.Name} changing to {changedHexagram.Name}, ");
 
 ZhouyiTrigram overlappedUpper = overlappedHexagram.UpperTrigram;
-ZhouyiTrigram overlappedLower = overlappedHexagram.UpperTrigram;
+ZhouyiTrigram overlappedLower = overlappedHexagram.LowerTrigram;
 if (overlappedUpper == overlappedLower)
-{
-    Console.WriteLine($"互{overlappedUpper.Name}{overlappedUpper.Name}。");
-    // Console.Write($"and {overlappedUpper.Name} with {overlappedLower.Name} as the overlapped.");
-}
-else
 {
     Console.WriteLine($"互重{overlappedUpper.Name}。");
     // Console.Write($"and doubled {overlappedUpper.Name} as the overlapped.");
+}
+else
+{
+    Console.WriteLine($"互{overlappedUpper.Name}{overlappedLower.Name}。");
+    // Console.Write($"and {overlappedUpper.Name} with {overlappedLower.Name} as the overlapped.");
 }
 
 Console.WriteLine($"易曰：{changingLine.LineText}");
