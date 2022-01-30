@@ -5,13 +5,22 @@ using YiJingFramework.Painting.Deriving.Extensions;
 using YiJingFramework.References.Zhouyi;
 using YiJingFramework.References.Zhouyi.Zhuan;
 
-#region 获取年月日时数 Get the number of year, month, date and hour
+DateTime dateTime = new DateTime(
+    year: 2022,
+    month: 1,
+    day: 30,
+    hour: 19,
+    minute: 07,
+    second: 20);
 
-Lunar lunar = Lunar.fromDate(DateTime.Now);
-Console.WriteLine(lunar.toFullString());
-Console.WriteLine();
+#region 获取年月日时数 Get the number of year, month, day and hour
+
+Lunar lunar = Lunar.fromDate(dateTime);
 // 获取农历时间。
 // Get lunar time.
+
+Console.WriteLine(lunar.toFullString());
+Console.WriteLine();
 
 int yearBranchIndex = lunar.getYearZhiIndex();
 // 获取支序数。

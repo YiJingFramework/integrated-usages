@@ -26,13 +26,22 @@ using YiJingFramework.Painting.Deriving.Extensions;
 using YiJingFramework.References.Zhouyi;
 using YiJingFramework.References.Zhouyi.Zhuan;
 
-#region 获取年月日时数 Get the number of year, month, date and hour
+DateTime dateTime = new DateTime(
+    year: 2022,
+    month: 1,
+    day: 30,
+    hour: 19,
+    minute: 07,
+    second: 20);
 
-Lunar lunar = Lunar.fromDate(DateTime.Now);
-Console.WriteLine(lunar.toFullString());
-Console.WriteLine();
+#region 获取年月日时数 Get the number of year, month, day and hour
+
+Lunar lunar = Lunar.fromDate(dateTime);
 // 获取农历时间。
 // Get lunar time.
+
+Console.WriteLine(lunar.toFullString());
+Console.WriteLine();
 
 int yearBranchIndex = lunar.getYearZhiIndex();
 // 获取支序数。
@@ -194,38 +203,36 @@ Console.WriteLine($"象曰：{xiang[changingLine]}");
 #endregion
 ```
 
-## 示例输出 Sample Output
-
-(2022.1.30 17:41)
+## 输出 Output
 
 ```plain
-二〇二一年腊月廿八 辛丑(牛)年 辛丑(牛)月 癸未(羊)日 酉(鸡)时 纳音[壁上土 壁上土 杨柳木 石榴木] 星期日 西方白虎 星宿[昴日鸡](凶) 彭祖百忌[癸不词讼理弱敌强 未不服药毒气入肠] 喜神方位[巽](东南) 阳贵神方位[巽](东南) 阴贵神方位[震](正东) 福神方 位[艮](东北) 财神方位[离](正南) 冲[(丁丑)牛] 煞[西]
+二〇二一年腊月廿八 辛丑(牛)年 辛丑(牛)月 癸未(羊)日 戌(狗)时 纳音[壁上土 壁上土 杨柳木 大海水] 星期日 西方白虎 星宿[昴日鸡](凶) 彭祖百忌[癸不词讼理弱敌强 未不服药毒气入肠] 喜神方位[巽](东南) 阳贵神方位[巽](东南) 阴贵神方位[震](正东) 福神方 位[艮](东北) 财神方位[离](正南) 冲[(丁丑)牛] 煞[西]
 
 本卦 THE ORIGINAL
 -- --
 -----
 -----
--- --
--- --
 -----
+-----
+-- --
 
 互卦 THE OVERLAPPED
 -----
 -----
--- --
 -----
--- --
--- --
+-----
+-----
+-----
 
 变卦 THE CHANGED
 -- --
------
--- --
--- --
 -- --
 -----
+-----
+-----
+-- --
 
-得随之屯，互巽艮。
-易曰：随有获，贞凶。有孚在道，以明，何咎？
-象曰：“随有获”，其义凶也。“有孚在道”，明功也。
+得大过之恒，互重乾。
+易曰：枯杨生华，老妇得其士夫，无咎无誉。
+象曰：“枯杨生华”，何可久也。“无妇士夫”，亦可丑也。
 ```
