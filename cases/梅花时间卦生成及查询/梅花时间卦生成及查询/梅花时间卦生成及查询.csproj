@@ -7,4 +7,22 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <PackageReference Include="lunar-csharp" Version="1.2.15" />
+    <PackageReference Include="YiJingFramework.Core" Version="4.0.1" />
+    <PackageReference Include="YiJingFramework.Painting.Deriving" Version="3.0.1" />
+    <PackageReference Include="YiJingFramework.Painting.Presenting" Version="3.0.1" />
+    <PackageReference Include="YiJingFramework.References.Zhouyi" Version="5.0.1" />
+    <PackageReference Include="YiJingFramework.References.Zhouyi.Zhuan" Version="3.0.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="jing.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="xiang.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
 </Project>
