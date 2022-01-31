@@ -26,13 +26,10 @@ using YiJingFramework.Painting.Deriving.Extensions;
 using YiJingFramework.References.Zhouyi;
 using YiJingFramework.References.Zhouyi.Zhuan;
 
-DateTime dateTime = new DateTime(
-    year: 2022,
-    month: 1,
-    day: 30,
-    hour: 19,
-    minute: 07,
-    second: 20);
+
+DateTime dateTime = DateTime.Now;
+Console.WriteLine(dateTime.ToString("yyyy/MM/dd HH:mm"));
+Console.WriteLine();
 
 #region 获取年月日时数 Get the number of year, month, day and hour
 
@@ -127,9 +124,9 @@ Painting changedPainting = originalPainting.ChangeLines(changingLineIndex - 1);
 
 #endregion
 
-#region 取互卦卦画 Get the overlapped hexagram's painting
+#region 取互卦卦画 Get the overlapping hexagram's painting
 
-Painting overlappedPainting = originalPainting.ToOverlapping();
+Painting overlappingPainting = originalPainting.ToOverlapping();
 // 仍是 YiJingFramework.Painting.Deriving 包提供的拓展方法，
 // 二三四爻作下卦，三四五爻作上卦产生新的卦，这就是互卦。
 // It's also an extension method provided by the YiJingFramework.Painting.Deriving package.
@@ -137,12 +134,12 @@ Painting overlappedPainting = originalPainting.ToOverlapping();
 // the second line, the third line, the fourth line,
 // then the third line again, the fourth line again and the fifth line 
 // -- of the original hexagram.
-// This new hexagram is the so-called overlapped hexagram.
+// This new hexagram is the so-called overlapping hexagram.
 
-if (overlappedPainting == originalPainting)
-    overlappedPainting = changedPainting.ToOverlapping();
+if (overlappingPainting == originalPainting)
+    overlappingPainting = changedPainting.ToOverlapping();
 // 《梅花易数》：乾坤无互互其变卦
-// If it's the same as the original one, use the changed's instead. 
+// If the original is Qian or Kun, which does not have a overlapping hexagram, use the changed's instead. 
 
 #endregion
 
@@ -154,8 +151,8 @@ Console.WriteLine("本卦 THE ORIGINAL");
 Console.WriteLine(stringConverter.ConvertTo(originalPainting));
 Console.WriteLine();
 
-Console.WriteLine("互卦 THE OVERLAPPED");
-Console.WriteLine(stringConverter.ConvertTo(overlappedPainting));
+Console.WriteLine("互卦 THE OVERLAPPING");
+Console.WriteLine(stringConverter.ConvertTo(overlappingPainting));
 Console.WriteLine();
 
 Console.WriteLine("变卦 THE CHANGED");
@@ -178,22 +175,22 @@ using (var xiangFile = new FileStream("./xiang.json", FileMode.Open, FileAccess.
 ZhouyiHexagram originalHexagram = zhouyi.GetHexagram(originalPainting);
 ZhouyiHexagram.Line changingLine = originalHexagram.GetLine(changingLineIndex);
 ZhouyiHexagram changedHexagram = zhouyi.GetHexagram(changedPainting);
-ZhouyiHexagram overlappedHexagram = zhouyi.GetHexagram(overlappedPainting);
+ZhouyiHexagram overlappingHexagram = zhouyi.GetHexagram(overlappingPainting);
 
 Console.Write($"得{originalHexagram.Name}之{changedHexagram.Name}，");
 // Console.Write($"It's {originalHexagram.Name} changing to {changedHexagram.Name}, ");
 
-ZhouyiTrigram overlappedUpper = overlappedHexagram.UpperTrigram;
-ZhouyiTrigram overlappedLower = overlappedHexagram.LowerTrigram;
-if (overlappedUpper == overlappedLower)
+ZhouyiTrigram overlappingUpper = overlappingHexagram.UpperTrigram;
+ZhouyiTrigram overlappingLower = overlappingHexagram.LowerTrigram;
+if (overlappingUpper == overlappingLower)
 {
-    Console.WriteLine($"互重{overlappedUpper.Name}。");
-    // Console.Write($"and doubled {overlappedUpper.Name} as the overlapped.");
+    Console.WriteLine($"互重{overlappingUpper.Name}。");
+    // Console.Write($"and doubled {overlappingUpper.Name} as the overlapping.");
 }
 else
 {
-    Console.WriteLine($"互{overlappedUpper.Name}{overlappedLower.Name}。");
-    // Console.Write($"and {overlappedUpper.Name} with {overlappedLower.Name} as the overlapped.");
+    Console.WriteLine($"互{overlappingUpper.Name}{overlappingLower.Name}。");
+    // Console.Write($"and {overlappingUpper.Name} with {overlappingLower.Name} as the overlapping.");
 }
 
 Console.WriteLine($"易曰：{changingLine.LineText}");
@@ -203,36 +200,38 @@ Console.WriteLine($"象曰：{xiang[changingLine]}");
 #endregion
 ```
 
-## 输出 Output
+## 输出样例 Sample Output
 
 ```plain
-二〇二一年腊月廿八 辛丑(牛)年 辛丑(牛)月 癸未(羊)日 戌(狗)时 纳音[壁上土 壁上土 杨柳木 大海水] 星期日 西方白虎 星宿[昴日鸡](凶) 彭祖百忌[癸不词讼理弱敌强 未不服药毒气入肠] 喜神方位[巽](东南) 阳贵神方位[巽](东南) 阴贵神方位[震](正东) 福神方 位[艮](东北) 财神方位[离](正南) 冲[(丁丑)牛] 煞[西]
+2022/01/31 13:45
+
+二〇二一年腊月廿九 辛丑(牛)年 辛丑(牛)月 甲申(猴)日 未(羊)时 纳音[壁上土 壁上土 泉中水 路旁土] 星期一 (除夕) 西方白虎 星宿[毕月乌](吉) 彭祖百忌[甲不开仓财物耗散 申不安床鬼祟入房] 喜神方位[艮](东北) 阳贵神方位[坤](西南) 阴贵神方位[艮](东北) 福神方位[坎](正北) 财神方位[艮](东北) 冲[(戊寅)虎] 煞[南]
 
 本卦 THE ORIGINAL
--- --
------
------
------
 -----
 -- --
+-----
+-----
+-- --
+-----
 
-互卦 THE OVERLAPPED
+互卦 THE OVERLAPPING
+-- --
 -----
 -----
 -----
 -----
------
------
+-- --
 
 变卦 THE CHANGED
+-----
+-- --
+-----
 -- --
 -- --
 -----
------
------
--- --
 
-得大过之恒，互重乾。
-易曰：枯杨生华，老妇得其士夫，无咎无誉。
-象曰：“枯杨生华”，何可久也。“无妇士夫”，亦可丑也。
+得离之噬嗑，互兑巽。
+易曰：日昃之离，不鼓缶而歌，则大耋之嗟，凶。
+象曰：“日昃之离”，何可久也？
 ```
