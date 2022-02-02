@@ -70,16 +70,19 @@ int timeNumber = timeBranchIndex + 1;
 #region 算卦数 Calculate the numbers about the hexagrams
 
 int upperNumber = (yearNumber + monthNumber + dayNumber) % 8;
+upperNumber = upperNumber == 0 ? 8 : upperNumber;
 // 《梅花易数》：年月日共计几数以八除之以零数作上卦
-// just do as this line to get the number of the upper hexagram
+// just do as this two lines to get the number of the upper hexagram
 
 int lowerNumber = (yearNumber + monthNumber + dayNumber + timeNumber) % 8;
+lowerNumber = lowerNumber == 0 ? 8 : lowerNumber;
 // 《梅花易数》：年月日数加时之数总计几数以八除之零数作下卦
-// just do as this line to get the number of the lower hexagram
+// just do as this two lines to get the number of the lower hexagram
 
 int changingLineIndex = (yearNumber + monthNumber + dayNumber + timeNumber) % 6;
+changingLineIndex = changingLineIndex == 0 ? 6 : changingLineIndex;
 // 《梅花易数》：就以除六数作动爻
-// just do as this line to get the number of the changing line
+// just do as this two lines to get the number of the changing line
 
 #endregion
 
