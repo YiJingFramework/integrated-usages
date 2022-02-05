@@ -32,12 +32,16 @@ Console.WriteLine(dateTime.ToString("yyyy/MM/dd HH:mm"));
 Console.WriteLine();
 
 #region 获取年月日时数 Get the number of year, month, day and hour
+if (dateTime.Hour is 23)
+    dateTime = dateTime.AddHours(1);
+// 使 23:00 到 24:00 取为后一日。
+// Let 23:00-24:00 considered as the next day.
 
 Lunar lunar = Lunar.fromDate(dateTime);
 // 获取农历时间。
 // Get lunar time.
 
-Console.WriteLine(lunar.toFullString());
+Console.WriteLine(lunar);
 Console.WriteLine();
 
 int yearBranchIndex = lunar.getYearZhiIndex();
@@ -52,7 +56,7 @@ int yearNumber = yearBranchIndex + 1;
 // 《梅花易数》：如子年一数丑年二数直至亥年十二数
 // Year number will be 1 if it's in the years of Zi, 2 in Chou(usually considered the second), ... 12 in Hai(usually considered the 12th).
 
-int monthNumber = lunar.getMonth();
+int monthNumber = Math.Abs(lunar.getMonth());
 // 《梅花易数》：月如正月一数直至十二月亦作十二数
 // Month number will be the 1-based index of the (lunar) month.
 
@@ -206,35 +210,35 @@ Console.WriteLine($"象曰：{xiang[changingLine]}");
 ## 输出样例 Sample Output
 
 ```plain
-2022/01/31 13:45
+2022/02/05 16:16
 
-二〇二一年腊月廿九 辛丑(牛)年 辛丑(牛)月 甲申(猴)日 未(羊)时 纳音[壁上土 壁上土 泉中水 路旁土] 星期一 (除夕) 西方白虎 星宿[毕月乌](吉) 彭祖百忌[甲不开仓财物耗散 申不安床鬼祟入房] 喜神方位[艮](东北) 阳贵神方位[坤](西南) 阴贵神方位[艮](东北) 福神方位[坎](正北) 财神方位[艮](东北) 冲[(戊寅)虎] 煞[南]
+二〇二二年正月初五
 
 本卦 THE ORIGINAL
 -----
--- --
 -----
 -----
 -- --
+-----
 -----
 
 互卦 THE OVERLAPPING
--- --
------
------
 -----
 -----
 -- --
+-----
+-- --
+-----
 
 变卦 THE CHANGED
+-- --
+-----
 -----
 -- --
 -----
--- --
--- --
 -----
 
-得离之噬嗑，互兑巽。
-易曰：日昃之离，不鼓缶而歌，则大耋之嗟，凶。
-象曰：“日昃之离”，何可久也？
+得履之兑，互巽离。
+易曰：视履考祥，其旋元吉。
+象曰：元吉在上，大有庆也。
 ```

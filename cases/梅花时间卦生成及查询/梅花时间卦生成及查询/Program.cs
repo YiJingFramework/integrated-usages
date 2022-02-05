@@ -11,12 +11,16 @@ Console.WriteLine(dateTime.ToString("yyyy/MM/dd HH:mm"));
 Console.WriteLine();
 
 #region 获取年月日时数 Get the number of year, month, day and hour
+if (dateTime.Hour is 23)
+    dateTime = dateTime.AddHours(1);
+// 使 23:00 到 24:00 取为后一日。
+// Let 23:00-24:00 considered as the next day.
 
 Lunar lunar = Lunar.fromDate(dateTime);
 // 获取农历时间。
 // Get lunar time.
 
-Console.WriteLine(lunar.toFullString());
+Console.WriteLine(lunar);
 Console.WriteLine();
 
 int yearBranchIndex = lunar.getYearZhiIndex();
@@ -31,7 +35,7 @@ int yearNumber = yearBranchIndex + 1;
 // 《梅花易数》：如子年一数丑年二数直至亥年十二数
 // Year number will be 1 if it's in the years of Zi, 2 in Chou(usually considered the second), ... 12 in Hai(usually considered the 12th).
 
-int monthNumber = lunar.getMonth();
+int monthNumber = Math.Abs(lunar.getMonth());
 // 《梅花易数》：月如正月一数直至十二月亦作十二数
 // Month number will be the 1-based index of the (lunar) month.
 
