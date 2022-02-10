@@ -94,15 +94,12 @@ changingLineIndex = changingLineIndex == 0 ? 6 : changingLineIndex;
 
 Painting GetTrigramPainting(int innateNumber)
 {
-    Debug.Assert(innateNumber is >= 1 and <= 8);
-    innateNumber -= 1;
-    var lower = innateNumber >> 2;
-    var middle = (innateNumber >> 1) - lower * 2;
-    var upper = innateNumber - lower * 4 - middle * 2;
+    innateNumber--;
+    Debug.Assert(innateNumber is >= 0b000 and <= 0b111);
     return new Painting(
-        new YinYang(lower == 0),
-        new YinYang(middle == 0),
-        new YinYang(upper == 0));
+        new YinYang((innateNumber & 0b100) is 0),
+        new YinYang((innateNumber & 0b010) is 0),
+        new YinYang((innateNumber & 0b001) is 0));
 }
 // 这是通过先天八卦数获取画卦的数学方法。
 // 也可以直接查表：1->☰ 2->☱ 3->☲ 4->☳ 5->☴ 6->☵ 7->☶ 8->☷
