@@ -14,17 +14,15 @@ All the packages could be found on [nuget.org](https://www.nuget.org/).
 - YiJingFramework.Core
 - YiJingFramework.Painting.Deriving
 - YiJingFramework.Painting.Presenting
-- YiJingFramework.References.Zhouyi
-- YiJingFramework.References.Zhouyi.Zhuan
+- YiJingFramework.Annotating.Zhouyi
 
 ## 代码 Codes
 ```csharp
-using com.nlf.calendar;
 using System.Diagnostics;
 using YiJingFramework.Core;
+using YiJingFramework.Annotating.Zhouyi;
+using YiJingFramework.Annotating.Zhouyi.Entities;
 using YiJingFramework.Painting.Deriving.Extensions;
-using YiJingFramework.References.Zhouyi;
-using YiJingFramework.References.Zhouyi.Zhuan;
 
 
 DateTime dateTime = DateTime.Now;
@@ -37,14 +35,14 @@ if (dateTime.Hour is 23)
 // 使 23:00 到 24:00 取为后一日。
 // Let 23:00-24:00 considered as the next day.
 
-Lunar lunar = Lunar.fromDate(dateTime);
+var lunar = Lunar.Lunar.FromDate(dateTime);
 // 获取农历时间。
 // Get lunar time.
 
 Console.WriteLine(lunar);
 Console.WriteLine();
 
-int yearBranchIndex = lunar.getYearZhiIndex();
+int yearBranchIndex = lunar.YearZhiIndex;
 // 获取支序数。
 // 不像 YiJingFramework.StemsAndBranches ，
 // 此库给出所谓的序数以子为零。
@@ -56,15 +54,15 @@ int yearNumber = yearBranchIndex + 1;
 // 《梅花易数》：如子年一数丑年二数直至亥年十二数
 // Year number will be 1 if it's in the years of Zi, 2 in Chou(usually considered the second), ... 12 in Hai(usually considered the 12th).
 
-int monthNumber = Math.Abs(lunar.getMonth());
+int monthNumber = Math.Abs(lunar.Month);
 // 《梅花易数》：月如正月一数直至十二月亦作十二数
 // Month number will be the 1-based index of the (lunar) month.
 
-int dayNumber = lunar.getDay();
+int dayNumber = lunar.Day;
 // 《梅花易数》：日数如初一一数直至三十日为三十数
 // just like the month number
 
-int timeBranchIndex = lunar.getTimeZhiIndex();
+int timeBranchIndex = lunar.TimeZhiIndex;
 int timeNumber = timeBranchIndex + 1;
 // 《梅花易数》：时如子时一数直至亥时为十二数
 // just like the year number
@@ -149,7 +147,7 @@ if (overlappingPainting == originalPainting)
 
 #region 将三个卦打印出来 Print the three hexagrams
 
-YiJingFramework.Painting.Presenting.StringConverter stringConverter =
+YiJingFramework.Painting.Presenting.Converters.StringConverter stringConverter =
     new("-----", "-- --", Environment.NewLine);
 Console.WriteLine("本卦 THE ORIGINAL");
 Console.WriteLine(stringConverter.ConvertTo(originalPainting));
@@ -165,28 +163,26 @@ Console.WriteLine();
 
 #endregion
 
-#region 查询《周易》及其《易传》 Looking it up in Zhouyi and its Yizhuan
+#region 查询《周易》及《易传》 Looking it up in Zhouyi and Yizhuan
 
-Zhouyi zhouyi;
-using (var jingFile = new FileStream("./jing.json", FileMode.Open, FileAccess.Read))
-    zhouyi = new Zhouyi(jingFile);
-XiangZhuan xiang;
-using (var xiangFile = new FileStream("./xiang.json", FileMode.Open, FileAccess.Read))
-    xiang = new XiangZhuan(xiangFile);
-// 初始化 Zhouyi 和 Xiangzhuan 。
-// Initialize Zhouyi and Xiangzhuan.
+var storeFile = File.ReadAllText("./zhouyi.json");
+var zhouyi = ZhouyiStore.DeserializeFromJsonString(storeFile);
+Debug.Assert(zhouyi is not null);
+// 初始化 ZhouyiStore 。
+// Initialize ZhouyiStore.
 
 ZhouyiHexagram originalHexagram = zhouyi.GetHexagram(originalPainting);
-ZhouyiHexagram.Line changingLine = originalHexagram.GetLine(changingLineIndex);
+ZhouyiHexagramLine changingLine = originalHexagram.EnumerateLines().ElementAt(changingLineIndex - 1);
 ZhouyiHexagram changedHexagram = zhouyi.GetHexagram(changedPainting);
 ZhouyiHexagram overlappingHexagram = zhouyi.GetHexagram(overlappingPainting);
 
 Console.Write($"得{originalHexagram.Name}之{changedHexagram.Name}，");
 // Console.Write($"It's {originalHexagram.Name} changing to {changedHexagram.Name}, ");
 
-ZhouyiTrigram overlappingUpper = overlappingHexagram.UpperTrigram;
-ZhouyiTrigram overlappingLower = overlappingHexagram.LowerTrigram;
-if (overlappingUpper == overlappingLower)
+var (overlappingUpperPainting, overlappingLowerPainting) = overlappingHexagram.SplitToTrigrams();
+var overlappingUpper = zhouyi.GetTrigram(overlappingUpperPainting);
+var overlappingLower = zhouyi.GetTrigram(overlappingLowerPainting);
+if (overlappingUpperPainting == overlappingLowerPainting)
 {
     Console.WriteLine($"互重{overlappingUpper.Name}。");
     // Console.Write($"and doubled {overlappingUpper.Name} as the overlapping.");
@@ -199,43 +195,43 @@ else
 
 Console.WriteLine($"易曰：{changingLine.LineText}");
 // Console.WriteLine($"Zhouyi: {changingLine.LineText}");
-Console.WriteLine($"象曰：{xiang[changingLine]}");
-// Console.WriteLine($"And xiang: {xiang[changingLine]}");
+Console.WriteLine($"象曰：{changingLine.Xiang}");
+// Console.WriteLine($"And xiang: {changingLine.Xiang}");
 #endregion
 ```
 
 ## 输出样例 Sample Output
 
 ```plain
-2022/02/05 16:16
+2023/01/07 17:52
 
-二〇二二年正月初五
+二〇二二年腊月十六
 
 本卦 THE ORIGINAL
 -----
------
------
 -- --
+-- --
+-----
 -----
 -----
 
 互卦 THE OVERLAPPING
------
------
 -- --
------
 -- --
------
-
-变卦 THE CHANGED
--- --
------
 -----
 -- --
 -----
 -----
 
-得履之兑，互巽离。
-易曰：视履考祥，其旋元吉。
-象曰：元吉在上，大有庆也。
+变卦 THE CHANGED
+-----
+-----
+-- --
+-----
+-----
+-----
+
+得大畜之小畜，互震兌。
+易曰：豶豕之牙，吉。
+象曰：六五之吉，有慶也。
 ```
