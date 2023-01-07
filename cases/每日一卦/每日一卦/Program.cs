@@ -1,9 +1,9 @@
 ﻿using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using YiJingFramework.Core;
+using YiJingFramework.Annotating.Zhouyi;
+using YiJingFramework.Annotating.Zhouyi.Entities;
 using YiJingFramework.Painting.Deriving.Extensions;
-using YiJingFramework.References.Zhouyi;
-using YiJingFramework.References.Zhouyi.Zhuan;
 
 var current = DateTime.Now;
 
@@ -27,9 +27,7 @@ internal partial class Program
     private readonly DateOnly date;
     private readonly Painting hexagram;
 
-    private readonly Zhouyi jing;
-    private readonly Tuanzhuan tuan;
-    private readonly XiangZhuan xiang;
+    private readonly ZhouyiStore zhouyi;
 
     private static Painting GetHexagram(int seed)
     {
@@ -47,65 +45,57 @@ internal partial class Program
         this.date = date;
         this.hexagram = GetHexagram(date.DayNumber);
 
-        using FileStream jingFile = new FileStream("./jing.json", FileMode.Open, FileAccess.Read);
-        this.jing = new Zhouyi(jingFile);
-        using FileStream tuanFile = new FileStream("./tuan.json", FileMode.Open, FileAccess.Read);
-        this.tuan = new Tuanzhuan(tuanFile);
-        using FileStream xiangFile = new FileStream("./xiang.json", FileMode.Open, FileAccess.Read);
-        this.xiang = new XiangZhuan(xiangFile);
+        var storeFile = File.ReadAllText("./zhouyi.json");
+        var store = ZhouyiStore.DeserializeFromJsonString(storeFile);
+        Debug.Assert(store is not null);
+
+        this.zhouyi = store;
     }
 
     private void Print(Painting hexagramPainting, string message = "")
     {
-        IEnumerable<ZhouyiHexagram.Line> AsEnumerable(ZhouyiHexagram zhouyiHexagram)
-        {
-            yield return zhouyiHexagram.FirstLine;
-            yield return zhouyiHexagram.SecondLine;
-            yield return zhouyiHexagram.ThirdLine;
-            yield return zhouyiHexagram.FourthLine;
-            yield return zhouyiHexagram.FifthLine;
-            yield return zhouyiHexagram.SixthLine;
-        }
-
         Debug.Assert(hexagramPainting.Count is 6);
-        ZhouyiHexagram hexagram = this.jing.GetHexagram(hexagramPainting);
+        ZhouyiHexagram hexagram = zhouyi.GetHexagram(hexagramPainting);
 
-        ZhouyiTrigram upper = hexagram.UpperTrigram;
-        ZhouyiTrigram lower = hexagram.LowerTrigram;
+        var (upperPainting, lowerPainting) = hexagram.SplitToTrigrams();
+        var upper = zhouyi.GetTrigram(upperPainting);
+        var lower = zhouyi.GetTrigram(lowerPainting);
 
         Console.Clear();
 
         Console.WriteLine($"{this.date:yyyy年 M月 d日}   {message}");
         Console.WriteLine();
 
-        if (upper == lower)
-            Console.WriteLine($"{hexagram.Name}为{upper.Nature}");
+        if (upperPainting == lowerPainting)
+            Console.WriteLine($"{hexagram.Name}為{upper.Nature}");
         else
             Console.WriteLine($"{upper.Nature}{lower.Nature}{hexagram.Name}");
 
         Console.WriteLine(hexagram.Text);
-        Console.WriteLine($"象曰：{this.xiang[hexagram]}");
-        Console.WriteLine($"彖曰：{this.tuan[hexagram]}");
+        Console.WriteLine($"象曰：{hexagram.Xiang}");
+        Console.WriteLine($"彖曰：{hexagram.Tuan}");
         Console.WriteLine();
 
-        var hexagramLines = AsEnumerable(hexagram).Reverse();
+        var hexagramLines = hexagram.EnumerateLines(false)
+            .Reverse()
+            .Append(hexagram.Yong);
 
-        var linePatterns = hexagramLines.Select(line => line.YinYang.IsYang ? "-----   " : "-- --   ");
+        var linePatterns = hexagramLines.Select(line => {
+            if (line.YinYang.HasValue)
+                return line.YinYang.Value.IsYang ? "-----   " : "-- --   ";
+            return "        ";
+        });
 
-        var lineTexts = hexagramLines.Select(line => line.ToString());
-        var padding = lineTexts.Select(line => line.Length).Max() + 2;
-        lineTexts = lineTexts.Select(text => text.PadRight(padding, '　'));
+        var lineTexts = hexagramLines.Select(line => line.LineText);
+        var padding = lineTexts.Select(line => {
+            return line is null ? 0 : line.Length;
+        }).Max() + 2;
+        lineTexts = lineTexts.Select(text => text?.PadRight(padding, '　'));
 
-        var xiangTexts = hexagramLines.Select(line => this.xiang[line]);
+        var xiangTexts = hexagramLines.Select(line => line.Xiang);
 
         foreach (var (pattern, text, xiangText) in linePatterns.Zip(lineTexts, xiangTexts))
             Console.WriteLine($"{pattern}{text}{xiangText}");
-        Console.WriteLine();
-
-        var applyNinesOrApplySixes = hexagram.ApplyNinesOrApplySixes;
-        if (applyNinesOrApplySixes is not null)
-            Console.WriteLine($"{applyNinesOrApplySixes.ToString().TrimEnd()}　　" +
-                $"{this.xiang[applyNinesOrApplySixes]}");
         Console.WriteLine();
     }
 

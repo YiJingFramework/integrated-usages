@@ -12,8 +12,7 @@ All the packages could be found on [nuget.org](https://www.nuget.org/).
 
 - YiJingFramework.Core
 - YiJingFramework.Painting.Deriving
-- YiJingFramework.References.Zhouyi
-- YiJingFramework.References.Zhouyi.Zhuan
+- YiJingFramework.Annotating.Zhouyi
 
 ## 代码 Codes
 
@@ -21,9 +20,9 @@ All the packages could be found on [nuget.org](https://www.nuget.org/).
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using YiJingFramework.Core;
+using YiJingFramework.Annotating.Zhouyi;
+using YiJingFramework.Annotating.Zhouyi.Entities;
 using YiJingFramework.Painting.Deriving.Extensions;
-using YiJingFramework.References.Zhouyi;
-using YiJingFramework.References.Zhouyi.Zhuan;
 
 var current = DateTime.Now;
 
@@ -47,9 +46,7 @@ internal partial class Program
     private readonly DateOnly date;
     private readonly Painting hexagram;
 
-    private readonly Zhouyi jing;
-    private readonly Tuanzhuan tuan;
-    private readonly XiangZhuan xiang;
+    private readonly ZhouyiStore zhouyi;
 
     private static Painting GetHexagram(int seed)
     {
@@ -67,65 +64,57 @@ internal partial class Program
         this.date = date;
         this.hexagram = GetHexagram(date.DayNumber);
 
-        using FileStream jingFile = new FileStream("./jing.json", FileMode.Open, FileAccess.Read);
-        this.jing = new Zhouyi(jingFile);
-        using FileStream tuanFile = new FileStream("./tuan.json", FileMode.Open, FileAccess.Read);
-        this.tuan = new Tuanzhuan(tuanFile);
-        using FileStream xiangFile = new FileStream("./xiang.json", FileMode.Open, FileAccess.Read);
-        this.xiang = new XiangZhuan(xiangFile);
+        var storeFile = File.ReadAllText("./zhouyi.json");
+        var store = ZhouyiStore.DeserializeFromJsonString(storeFile);
+        Debug.Assert(store is not null);
+
+        this.zhouyi = store;
     }
 
     private void Print(Painting hexagramPainting, string message = "")
     {
-        IEnumerable<ZhouyiHexagram.Line> AsEnumerable(ZhouyiHexagram zhouyiHexagram)
-        {
-            yield return zhouyiHexagram.FirstLine;
-            yield return zhouyiHexagram.SecondLine;
-            yield return zhouyiHexagram.ThirdLine;
-            yield return zhouyiHexagram.FourthLine;
-            yield return zhouyiHexagram.FifthLine;
-            yield return zhouyiHexagram.SixthLine;
-        }
-
         Debug.Assert(hexagramPainting.Count is 6);
-        ZhouyiHexagram hexagram = this.jing.GetHexagram(hexagramPainting);
+        ZhouyiHexagram hexagram = zhouyi.GetHexagram(hexagramPainting);
 
-        ZhouyiTrigram upper = hexagram.UpperTrigram;
-        ZhouyiTrigram lower = hexagram.LowerTrigram;
+        var (upperPainting, lowerPainting) = hexagram.SplitToTrigrams();
+        var upper = zhouyi.GetTrigram(upperPainting);
+        var lower = zhouyi.GetTrigram(lowerPainting);
 
         Console.Clear();
 
         Console.WriteLine($"{this.date:yyyy年 M月 d日}   {message}");
         Console.WriteLine();
 
-        if (upper == lower)
-            Console.WriteLine($"{hexagram.Name}为{upper.Nature}");
+        if (upperPainting == lowerPainting)
+            Console.WriteLine($"{hexagram.Name}為{upper.Nature}");
         else
             Console.WriteLine($"{upper.Nature}{lower.Nature}{hexagram.Name}");
 
         Console.WriteLine(hexagram.Text);
-        Console.WriteLine($"象曰：{this.xiang[hexagram]}");
-        Console.WriteLine($"彖曰：{this.tuan[hexagram]}");
+        Console.WriteLine($"象曰：{hexagram.Xiang}");
+        Console.WriteLine($"彖曰：{hexagram.Tuan}");
         Console.WriteLine();
 
-        var hexagramLines = AsEnumerable(hexagram).Reverse();
+        var hexagramLines = hexagram.EnumerateLines(false)
+            .Reverse()
+            .Append(hexagram.Yong);
 
-        var linePatterns = hexagramLines.Select(line => line.YinYang.IsYang ? "-----   " : "-- --   ");
+        var linePatterns = hexagramLines.Select(line => {
+            if (line.YinYang.HasValue)
+                return line.YinYang.Value.IsYang ? "-----   " : "-- --   ";
+            return "        ";
+        });
 
-        var lineTexts = hexagramLines.Select(line => line.ToString());
-        var padding = lineTexts.Select(line => line.Length).Max() + 2;
-        lineTexts = lineTexts.Select(text => text.PadRight(padding, '　'));
+        var lineTexts = hexagramLines.Select(line => line.LineText);
+        var padding = lineTexts.Select(line => {
+            return line is null ? 0 : line.Length;
+        }).Max() + 2;
+        lineTexts = lineTexts.Select(text => text?.PadRight(padding, '　'));
 
-        var xiangTexts = hexagramLines.Select(line => this.xiang[line]);
+        var xiangTexts = hexagramLines.Select(line => line.Xiang);
 
         foreach (var (pattern, text, xiangText) in linePatterns.Zip(lineTexts, xiangTexts))
             Console.WriteLine($"{pattern}{text}{xiangText}");
-        Console.WriteLine();
-
-        var applyNinesOrApplySixes = hexagram.ApplyNinesOrApplySixes;
-        if (applyNinesOrApplySixes is not null)
-            Console.WriteLine($"{applyNinesOrApplySixes.ToString().TrimEnd()}　　" +
-                $"{this.xiang[applyNinesOrApplySixes]}");
         Console.WriteLine();
     }
 
@@ -210,6 +199,7 @@ internal partial class Program
         out string message)
     {
         List<int> values = new List<int>();
+        List<int> valuesMinus1 = new List<int>();
         foreach (var str in args)
         {
             if (!int.TryParse(str, out int value) || value < 1 || value > 6)
@@ -218,9 +208,10 @@ internal partial class Program
                 message = "参数错误 Invalid Arguments";
                 return false;
             }
-            values.Add(value - 1);
+            values.Add(value);
+            valuesMinus1.Add(value - 1);
         }
-        result = this.hexagram.ChangeLines(values);
+        result = this.hexagram.ChangeLines(valuesMinus1);
         message = $"变卦 Changed ({string.Join(' ', values)})";
         return true;
     }
@@ -259,21 +250,20 @@ internal partial class Program
 This use case contains human-computer interaction, so only part of the output is provided here.
 
 ```plain
-2022年 1月 30日   每日一卦 A Hexagram Per Day
+2023年 1月 7日   每日一卦 A Hexagram Per Day
 
-乾为天
-元，亨，利，贞。
-象曰：天行健，君子以自强不息。
-彖曰：大哉乾元，万物资始，乃统天。云行雨施，品物流形。大明终始，六位时成。时乘六龙以御天。乾道变化，各正性命。保合大和，乃利贞。首出庶物，万国威宁。
+火山旅
+旅，小亨，旅貞吉。
+象曰：山上有火，旅。君子以明慎用刑而不留獄。
+彖曰：「旅，小亨」，柔得中乎外，而順乎剛，止而麗乎明，是以「小亨，旅貞吉」也。旅之時義大矣哉！
 
------   上九：亢龙，有悔。　　　　　　　　　　　“亢龙有悔”，盈不可久也。
------   九五：飞龙在天，利见大人。　　　　　　　“飞龙在天”，大人造也。
------   九四：或跃在渊，无咎。　　　　　　　　　“或跃在渊”，进无咎也。
------   九三：君子终日乾乾，夕惕若。厉无咎。　　“终日乾乾”，反复道也。
------   九二：见龙在田，利见大人。　　　　　　　“见龙在田”，德施普也。
------   初九：潜龙，勿用。　　　　　　　　　　　“潜龙勿用”，阳在下也。
+-----   鳥焚其巢，旅人先笑后號啕。喪牛于易，凶。　　以旅在上，其義焚也。「喪牛于易」，終莫之聞也。
+-- --   射雉一矢亡，終以譽命。　　　　　　　　　　　「終以譽命」，上逮也。
+-----   旅于處，得其資斧，我心不快。　　　　　　　　「旅于處」，未得位也。「得其資斧」，心未快也。
+-----   旅焚其次，喪其童仆，貞厲。　　　　　　　　　「旅焚其次」，亦以傷矣。以旅與下，其義喪也。
+-- --   旅即次，懷其資，得童仆貞。　　　　　　　　　「得童仆貞」，終無尤也。
+-- --   旅瑣瑣，斯其所取災。　　　　　　　　　　　　「旅瑣瑣」，志窮災也。
 
-用九：见群龙无首，吉。　　“用九”，天德不可为首也。
 
 ==================================
 
@@ -290,25 +280,46 @@ e. 退出
 e. Exit
 
 ==================================
-
-
 ```
 
 
 ```plain
-2022年 1月 30日   变卦 Changed (3 4)
+2023年 1月 7日   变卦 Changed (1 2 5)
 
-风泽中孚
-豚鱼，吉。利涉大川，利贞。
-象曰：泽上有风，中孚。君子以议狱缓死。
-彖曰：“中孚”，柔在内而刚得中，说而巽，孚乃化邦也。“豚鱼吉”，信及豚鱼也。“利涉大川”，乘木舟虚也。中孚以利贞，乃应乎天也。
+乾為天
+乾，元亨，利貞。
+象曰：天行健，君子以自強不息。
+彖曰：大哉乾元，萬物資始，乃統天。云行雨施，品物流形。大明始終，六位時成，時乘六龍以御天。乾道變化，各正性命，保合大和，乃利貞。首出庶物，萬國咸寧。
 
------   上九：翰音登于天，贞凶。　　　　　　　　　　　　　　“翰音登于天”，何可长也？
------   九五：有孚挛如，无咎。　　　　　　　　　　　　　　　“有孚挛如”，位正当也。
--- --   六四：月几望，马匹亡，无咎。　　　　　　　　　　　　“马匹亡”，绝类上也。
--- --   六三：得敌，或鼓或罢，或泣或歌。　　　　　　　　　　“或鼓或罢”，位不当也。
------   九二：鸣鹤在阴，其子和之。我有好爵，吾与尔靡之。　　“其子和之”，中心愿也。
------   初九：虞吉，有它不燕。　　　　　　　　　　　　　　　初九“虞吉”，志未变也。
+-----   亢龍有悔。　　　　　　　　　　　　　亢龍有悔，盈不可久也。
+-----   飛龍在天，利見大人。　　　　　　　　飛龍在天，大人造也。
+-----   或躍在淵，無咎。　　　　　　　　　　或躍在淵，進無咎也。
+-----   君子終日乾乾，夕惕若，厲，無咎。　　終日乾乾，反復道也。
+-----   見龍再田，利見大人。　　　　　　　　見龍在田，德施普也。
+-----   潛龍勿用。　　　　　　　　　　　　　潛龍勿用，陽在下也。
+        見群龍無首，吉。　　　　　　　　　　用九，天德不可為首也。
+
+==================================
+
+输入任意内容以返回 Input Anything To Get Back
+
+==================================
+```
+
+```plain
+2023年 1月 7日   错卦 Laterally Linked
+
+水澤節
+節，亨。苦節，不可貞。
+象曰：澤上有水，節。君子以制數度、議德行。
+彖曰：「節，亨」，剛柔分而剛得中。「苦節，不可貞」，其道窮也。說以行險，當位以節，中正以通。天地節而四時成，節以制度，不傷財，不害民。
+
+-- --   苦節，貞凶，悔亡。　　　　「苦節，貞凶」，其道窮也。
+-----   甘節，吉。往有尚。　　　　甘節之吉，居位中也。
+-- --   安節，亨。　　　　　　　　安節之亨，承上道也。
+-- --   不節若，則嗟若，無咎。　　不節之嗟，又誰咎也？
+-----   不出門庭，凶。　　　　　　「不出門庭」，失時極也。
+-----   不出戶庭，無咎。　　　　　「不出戶庭」，知通塞也。
 
 
 ==================================
@@ -316,32 +327,4 @@ e. Exit
 输入任意内容以返回 Input Anything To Get Back
 
 ==================================
-
-
-```
-
-```plain
-2022年 1月 30日   错卦 Laterally Linked
-
-坤为地
-元亨。利牝马之贞。君子有攸往，先迷，後得主，利。西南得朋，东北丧朋。安贞吉。
-象曰：地势坤。君子以厚德载物。
-彖曰：至哉坤元，万物资生，乃顺承天。坤厚载物，德合无疆。含弘光大，品物咸亨。牝马地类，行地无疆，柔顺利贞。君子。君子攸行，先迷失道，後顺得常。西南得朋，乃与类行。东北丧朋，乃终有庆。安贞之吉，应地无疆。
-
--- --   上六：龙战于野，其血玄黄。　　　　　　　“龙战于野”，共道穷也。
--- --   六五：黄裳，元吉。　　　　　　　　　　　“黄裳元吉”，文在中也。
--- --   六四：括囊，无咎无誉。　　　　　　　　　“括囊无咎”，慎不害也。
--- --   六三：含章可贞，或从王事，无成有终。　　“含章可贞”，以时发也。“或従王事”，知光大也。
--- --   六二：直方大，不习，无不利。　　　　　　六二之动，直以方也。“不习无不利”，地道光也。
--- --   初六：履霜，坚冰至。　　　　　　　　　　“履霜坚冰”，阴始凝也，驯致其道，至坚冰也。
-
-用六：利永贞。　　用六“永贞”，以大终也。
-
-==================================
-
-输入任意内容以返回 Input Anything To Get Back
-
-==================================
-
-
 ```

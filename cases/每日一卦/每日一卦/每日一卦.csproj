@@ -2,26 +2,19 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>net6.0</TargetFramework>
+    <TargetFramework>net7.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="YiJingFramework.Core" Version="4.0.1" />
-    <PackageReference Include="YiJingFramework.Painting.Deriving" Version="3.0.1" />
-    <PackageReference Include="YiJingFramework.References.Zhouyi" Version="5.0.1" />
-    <PackageReference Include="YiJingFramework.References.Zhouyi.Zhuan" Version="3.0.1" />
+    <PackageReference Include="YiJingFramework.Annotating.Zhouyi" Version="2.0.0" />
+    <PackageReference Include="YiJingFramework.Core" Version="5.0.0" />
+    <PackageReference Include="YiJingFramework.Painting.Deriving" Version="4.0.0" />
   </ItemGroup>
 
   <ItemGroup>
-    <None Update="jing.json">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="tuan.json">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="xiang.json">
+    <None Update="zhouyi.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>
