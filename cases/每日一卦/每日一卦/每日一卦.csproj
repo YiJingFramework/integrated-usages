@@ -8,7 +8,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="YiJingFramework.Annotating.Zhouyi" Version="3.1.0" />
+    <PackageReference Include="YiJingFramework.Annotating.Zhouyi" Version="3.1.1" />
     <PackageReference Include="YiJingFramework.Core" Version="5.1.0" />
     <PackageReference Include="YiJingFramework.Painting.Deriving" Version="4.1.0" />
   </ItemGroup>
