@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
@@ -8,9 +8,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="YiJingFramework.Annotating.Zhouyi" Version="2.0.0" />
-    <PackageReference Include="YiJingFramework.Core" Version="5.0.0" />
-    <PackageReference Include="YiJingFramework.Painting.Deriving" Version="4.0.0" />
+    <PackageReference Include="YiJingFramework.Annotating.Zhouyi" Version="3.1.0" />
+    <PackageReference Include="YiJingFramework.Core" Version="5.1.0" />
+    <PackageReference Include="YiJingFramework.Painting.Deriving" Version="4.1.0" />
   </ItemGroup>
 
   <ItemGroup>

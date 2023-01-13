@@ -9,10 +9,10 @@
 
   <ItemGroup>
     <PackageReference Include="lunar-csharp" Version="1.4.2" />
-    <PackageReference Include="YiJingFramework.Annotating.Zhouyi" Version="2.0.0" />
-    <PackageReference Include="YiJingFramework.Core" Version="5.0.0" />
-    <PackageReference Include="YiJingFramework.Painting.Deriving" Version="4.0.0" />
-    <PackageReference Include="YiJingFramework.Painting.Presenting" Version="4.0.0" />
+    <PackageReference Include="YiJingFramework.Annotating.Zhouyi" Version="3.1.0" />
+    <PackageReference Include="YiJingFramework.Core" Version="5.1.0" />
+    <PackageReference Include="YiJingFramework.Painting.Deriving" Version="4.1.0" />
+    <PackageReference Include="YiJingFramework.Painting.Presenting" Version="4.1.0" />
   </ItemGroup>
 
   <ItemGroup>
