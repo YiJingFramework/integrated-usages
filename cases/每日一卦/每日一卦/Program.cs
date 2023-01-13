@@ -71,7 +71,7 @@ internal partial class Program
         else
             Console.WriteLine($"{upper.Nature}{lower.Nature}{hexagram.Name}");
 
-        Console.WriteLine(hexagram.Text);
+        Console.WriteLine($"{hexagram.Name}，{hexagram.Text}");
         Console.WriteLine($"象曰：{hexagram.Xiang}");
         Console.WriteLine($"彖曰：{hexagram.Tuan}");
         Console.WriteLine();
