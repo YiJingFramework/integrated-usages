@@ -1,13 +1,14 @@
 ﻿using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using YiJingFramework.Core;
 using YiJingFramework.Annotating.Zhouyi;
 using YiJingFramework.Annotating.Zhouyi.Entities;
-using YiJingFramework.Painting.Deriving.Extensions;
+using YiJingFramework.EntityRelationships.MostAccepted.GuaDerivingExtensions;
+using YiJingFramework.PrimitiveTypes;
+using YiJingFramework.PrimitiveTypes.GuaWithFixedCount;
 
 var current = DateTime.Now;
 
-DateOnly? ParseToDateTime(string s, string? format = null)
+static DateOnly? ParseToDateTime(string s, string? format = null)
 {
     format = format ?? "yyyyMMdd";
     return DateOnly.TryParseExact(s, format, out var result) ? result : null;
@@ -25,19 +26,19 @@ new Program(date).Run();
 internal partial class Program
 {
     private readonly DateOnly date;
-    private readonly Painting hexagram;
+    private readonly GuaHexagram hexagram;
 
     private readonly ZhouyiStore zhouyi;
 
-    private static Painting GetHexagram(int seed)
+    private static GuaHexagram GetHexagram(int seed)
     {
-        IEnumerable<YinYang> RandomYinYangs(int seed)
+        static IEnumerable<Yinyang> RandomYinYangs(int seed)
         {
             Random random = new Random(seed);
             for (; ; )
-                yield return (YinYang)random.Next(0, 2);
+                yield return (Yinyang)random.Next(0, 2);
         }
-        return new Painting(RandomYinYangs(seed).Take(6));
+        return new GuaHexagram(RandomYinYangs(seed).Take(6));
     }
 
     internal Program(DateOnly date)
@@ -52,9 +53,8 @@ internal partial class Program
         this.zhouyi = store;
     }
 
-    private void Print(Painting hexagramPainting, string message = "")
+    private void Print(GuaHexagram hexagramPainting, string message = "")
     {
-        Debug.Assert(hexagramPainting.Count is 6);
         ZhouyiHexagram hexagram = zhouyi.GetHexagram(hexagramPainting);
 
         var (upperPainting, lowerPainting) = hexagram.SplitToTrigrams();
@@ -134,7 +134,7 @@ internal partial class Program
             }
 
 #pragma warning disable IDE0018
-            Painting? result;
+            GuaHexagram? result;
             string newMessage;
 #pragma warning restore IDE0018
             var succeeded = inputs[0] switch
@@ -165,7 +165,7 @@ internal partial class Program
 
 #pragma warning disable CA1822 // 将成员标记为 static
     private bool ApplyDerivationBadInput(
-        [NotNullWhen(true)] out Painting? result,
+        [NotNullWhen(true)] out GuaHexagram? result,
         out string message)
     {
         result = null;
@@ -176,7 +176,7 @@ internal partial class Program
 
     private bool ApplyDerivation1(
         IEnumerable<string> args,
-        [NotNullWhen(true)] out Painting? result,
+        [NotNullWhen(true)] out GuaHexagram? result,
         out string message)
     {
         List<int> values = new List<int>();
@@ -192,32 +192,32 @@ internal partial class Program
             values.Add(value);
             valuesMinus1.Add(value - 1);
         }
-        result = this.hexagram.ChangeLines(valuesMinus1);
+        result = this.hexagram.ReverseLines(valuesMinus1);
         message = $"变卦 Changed ({string.Join(' ', values)})";
         return true;
     }
 
     private bool ApplyDerivation2(
-        [NotNullWhen(true)] out Painting? result,
+        [NotNullWhen(true)] out GuaHexagram? result,
         out string message)
     {
-        result = this.hexagram.ToLaterallyLinked();
+        result = this.hexagram.Cuogua();
         message = "错卦 Laterally Linked";
         return true;
     }
     private bool ApplyDerivation3(
-        [NotNullWhen(true)] out Painting? result,
+        [NotNullWhen(true)] out GuaHexagram? result,
         out string message)
     {
-        result = this.hexagram.ToOverlapping();
+        result = this.hexagram.Hugua();
         message = "互卦 Overlapping";
         return true;
     }
     private bool ApplyDerivation4(
-        [NotNullWhen(true)] out Painting? result,
+        [NotNullWhen(true)] out GuaHexagram? result,
         out string message)
     {
-        result = this.hexagram.ToOverturned();
+        result = this.hexagram.Zonggua();
         message = "综卦 Overturned";
         return true;
     }

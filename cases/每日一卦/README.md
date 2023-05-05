@@ -10,23 +10,23 @@ When this use case is opened, one of the hexagrams will be shown (it will be the
 
 All the packages could be found on [nuget.org](https://www.nuget.org/).
 
-- YiJingFramework.Core
-- YiJingFramework.Painting.Deriving
 - YiJingFramework.Annotating.Zhouyi
+- YiJingFramework.EntityRelationships.MostAccepted
 
 ## 代码 Codes
 
 ```csharp
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using YiJingFramework.Core;
 using YiJingFramework.Annotating.Zhouyi;
 using YiJingFramework.Annotating.Zhouyi.Entities;
-using YiJingFramework.Painting.Deriving.Extensions;
+using YiJingFramework.EntityRelationships.MostAccepted.GuaDerivingExtensions;
+using YiJingFramework.PrimitiveTypes;
+using YiJingFramework.PrimitiveTypes.GuaWithFixedCount;
 
 var current = DateTime.Now;
 
-DateOnly? ParseToDateTime(string s, string? format = null)
+static DateOnly? ParseToDateTime(string s, string? format = null)
 {
     format = format ?? "yyyyMMdd";
     return DateOnly.TryParseExact(s, format, out var result) ? result : null;
@@ -44,19 +44,19 @@ new Program(date).Run();
 internal partial class Program
 {
     private readonly DateOnly date;
-    private readonly Painting hexagram;
+    private readonly GuaHexagram hexagram;
 
     private readonly ZhouyiStore zhouyi;
 
-    private static Painting GetHexagram(int seed)
+    private static GuaHexagram GetHexagram(int seed)
     {
-        IEnumerable<YinYang> RandomYinYangs(int seed)
+        static IEnumerable<Yinyang> RandomYinYangs(int seed)
         {
             Random random = new Random(seed);
             for (; ; )
-                yield return (YinYang)random.Next(0, 2);
+                yield return (Yinyang)random.Next(0, 2);
         }
-        return new Painting(RandomYinYangs(seed).Take(6));
+        return new GuaHexagram(RandomYinYangs(seed).Take(6));
     }
 
     internal Program(DateOnly date)
@@ -71,9 +71,8 @@ internal partial class Program
         this.zhouyi = store;
     }
 
-    private void Print(Painting hexagramPainting, string message = "")
+    private void Print(GuaHexagram hexagramPainting, string message = "")
     {
-        Debug.Assert(hexagramPainting.Count is 6);
         ZhouyiHexagram hexagram = zhouyi.GetHexagram(hexagramPainting);
 
         var (upperPainting, lowerPainting) = hexagram.SplitToTrigrams();
@@ -153,7 +152,7 @@ internal partial class Program
             }
 
 #pragma warning disable IDE0018
-            Painting? result;
+            GuaHexagram? result;
             string newMessage;
 #pragma warning restore IDE0018
             var succeeded = inputs[0] switch
@@ -184,7 +183,7 @@ internal partial class Program
 
 #pragma warning disable CA1822 // 将成员标记为 static
     private bool ApplyDerivationBadInput(
-        [NotNullWhen(true)] out Painting? result,
+        [NotNullWhen(true)] out GuaHexagram? result,
         out string message)
     {
         result = null;
@@ -195,7 +194,7 @@ internal partial class Program
 
     private bool ApplyDerivation1(
         IEnumerable<string> args,
-        [NotNullWhen(true)] out Painting? result,
+        [NotNullWhen(true)] out GuaHexagram? result,
         out string message)
     {
         List<int> values = new List<int>();
@@ -211,32 +210,32 @@ internal partial class Program
             values.Add(value);
             valuesMinus1.Add(value - 1);
         }
-        result = this.hexagram.ChangeLines(valuesMinus1);
+        result = this.hexagram.ReverseLines(valuesMinus1);
         message = $"变卦 Changed ({string.Join(' ', values)})";
         return true;
     }
 
     private bool ApplyDerivation2(
-        [NotNullWhen(true)] out Painting? result,
+        [NotNullWhen(true)] out GuaHexagram? result,
         out string message)
     {
-        result = this.hexagram.ToLaterallyLinked();
+        result = this.hexagram.Cuogua();
         message = "错卦 Laterally Linked";
         return true;
     }
     private bool ApplyDerivation3(
-        [NotNullWhen(true)] out Painting? result,
+        [NotNullWhen(true)] out GuaHexagram? result,
         out string message)
     {
-        result = this.hexagram.ToOverlapping();
+        result = this.hexagram.Hugua();
         message = "互卦 Overlapping";
         return true;
     }
     private bool ApplyDerivation4(
-        [NotNullWhen(true)] out Painting? result,
+        [NotNullWhen(true)] out GuaHexagram? result,
         out string message)
     {
-        result = this.hexagram.ToOverturned();
+        result = this.hexagram.Zonggua();
         message = "综卦 Overturned";
         return true;
     }
@@ -250,19 +249,19 @@ internal partial class Program
 This use case contains human-computer interaction, so only part of the output is provided here.
 
 ```plain
-2023年 1月 7日   每日一卦 A Hexagram Per Day
+2023年 5月 5日   每日一卦 A Hexagram Per Day
 
-火山旅
-旅，小亨，旅貞吉。
-象曰：山上有火，旅。君子以明慎用刑而不留獄。
-彖曰：「旅，小亨」，柔得中乎外，而順乎剛，止而麗乎明，是以「小亨，旅貞吉」也。旅之時義大矣哉！
+火水未濟
+未濟，亨，小狐汔濟，濡其尾，無攸利。
+象曰：火在水上，未濟。君子以慎辨物居方。
+彖曰：「未濟，亨」，柔得中也。「小狐汔濟」，未出中也。「濡其尾，無攸利」，不續終也。雖不當位，剛柔應也。
 
------   鳥焚其巢，旅人先笑后號啕。喪牛于易，凶。　　以旅在上，其義焚也。「喪牛于易」，終莫之聞也。
--- --   射雉一矢亡，終以譽命。　　　　　　　　　　　「終以譽命」，上逮也。
------   旅于處，得其資斧，我心不快。　　　　　　　　「旅于處」，未得位也。「得其資斧」，心未快也。
------   旅焚其次，喪其童仆，貞厲。　　　　　　　　　「旅焚其次」，亦以傷矣。以旅與下，其義喪也。
--- --   旅即次，懷其資，得童仆貞。　　　　　　　　　「得童仆貞」，終無尤也。
--- --   旅瑣瑣，斯其所取災。　　　　　　　　　　　　「旅瑣瑣」，志窮災也。
+-----   有孚于飲酒，無咎，濡其首，有孚失是。　　　　飲酒濡首，亦不知節也。
+-- --   貞吉，無悔，君子之光，有孚，吉。　　　　　　「君子之光」，其暉吉也。
+-----   貞吉，悔亡，震用伐鬼方，三年有賞于大國。　　「貞吉，悔亡」，志行也。
+-- --   未濟，征凶，利涉大川。　　　　　　　　　　　「未濟，征凶」，位不當也。
+-----   曳其輪，貞吉。　　　　　　　　　　　　　　　九二「貞吉」，中以行正也。
+-- --   濡其尾，吝。　　　　　　　　　　　　　　　　「濡其尾」，亦不知極也。
 
 
 ==================================
@@ -282,22 +281,21 @@ e. Exit
 ==================================
 ```
 
-
 ```plain
-2023年 1月 7日   变卦 Changed (1 2 5)
+2023年 5月 5日   变卦 Changed (1 2 5)
 
-乾為天
-乾，元亨，利貞。
-象曰：天行健，君子以自強不息。
-彖曰：大哉乾元，萬物資始，乃統天。云行雨施，品物流形。大明始終，六位時成，時乘六龍以御天。乾道變化，各正性命，保合大和，乃利貞。首出庶物，萬國咸寧。
+天雷無妄
+無妄，元亨，利貞。其匪正有眚，不利有攸往。
+象曰：天下雷行，物與無妄。先王以茂對時，育萬物。
+彖曰：無妄，剛自外來而為主於內。動而健，剛中而應，大亨以正，天之命也。「其匪正有眚，不利有攸往」，無妄之往，何之矣？天命不佑行矣哉？
 
------   亢龍有悔。　　　　　　　　　　　　　亢龍有悔，盈不可久也。
------   飛龍在天，利見大人。　　　　　　　　飛龍在天，大人造也。
------   或躍在淵，無咎。　　　　　　　　　　或躍在淵，進無咎也。
------   君子終日乾乾，夕惕若，厲，無咎。　　終日乾乾，反復道也。
------   見龍再田，利見大人。　　　　　　　　見龍在田，德施普也。
------   潛龍勿用。　　　　　　　　　　　　　潛龍勿用，陽在下也。
-        見群龍無首，吉。　　　　　　　　　　用九，天德不可為首也。
+-----   無妄行，有眚，無攸利。　　　　　　　　　　　無妄之行，窮之災也。
+-----   無妄之疾，勿藥有喜。　　　　　　　　　　　　無妄之藥，不可試也。
+-----   可貞，無咎。　　　　　　　　　　　　　　　　「可貞，無咎」，固有之也。
+-- --   無妄之災，或系之牛，行人之得，邑人之災。　　行人得牛，邑人災也。
+-- --   不耕獲，不菑畬，則利有攸往。　　　　　　　　「不耕獲」，未富也。
+-----   無妄往，吉。　　　　　　　　　　　　　　　　無妄之往，得志也。
+
 
 ==================================
 
@@ -307,19 +305,19 @@ e. Exit
 ```
 
 ```plain
-2023年 1月 7日   错卦 Laterally Linked
+2023年 5月 5日   错卦 Laterally Linked
 
-水澤節
-節，亨。苦節，不可貞。
-象曰：澤上有水，節。君子以制數度、議德行。
-彖曰：「節，亨」，剛柔分而剛得中。「苦節，不可貞」，其道窮也。說以行險，當位以節，中正以通。天地節而四時成，節以制度，不傷財，不害民。
+水火既濟
+既濟，亨，小利貞，初吉終亂。
+象曰：水在火上，既濟。君子以思患而預防之。
+彖曰：「既濟，亨」，小者亨也。「利貞」，剛柔正而位當也。「初吉」，柔得中也。終止則亂，其道窮也。
 
--- --   苦節，貞凶，悔亡。　　　　「苦節，貞凶」，其道窮也。
------   甘節，吉。往有尚。　　　　甘節之吉，居位中也。
--- --   安節，亨。　　　　　　　　安節之亨，承上道也。
--- --   不節若，則嗟若，無咎。　　不節之嗟，又誰咎也？
------   不出門庭，凶。　　　　　　「不出門庭」，失時極也。
------   不出戶庭，無咎。　　　　　「不出戶庭」，知通塞也。
+-- --   濡其首，厲。　　　　　　　　　　　　　　「濡其首，厲」，何可久也！
+-----   東鄰殺牛，不如西鄰之禴祭，實受其福。　　「東鄰殺牛」，不如西鄰之時也。「實受其福」，吉大來也。
+-- --   儒有衣袽，終日戒。　　　　　　　　　　　「終日戒」，有所疑也。
+-----   高宗伐鬼方，三年克之，小人勿用。　　　　「三年克之」，憊也。
+-- --   婦喪其茀，勿逐，七日得。　　　　　　　　「七日得」，以中道也。
+-----   曳其輪，濡其尾，無咎。　　　　　　　　　「曳其輪」，義無咎也。
 
 
 ==================================
