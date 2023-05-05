@@ -11,25 +11,23 @@ This use case generates the time based hexagrams in plum blossom numerology and 
 All the packages could be found on [nuget.org](https://www.nuget.org/).
 
 - lunar-csharp
-- YiJingFramework.Core
-- YiJingFramework.Painting.Deriving
-- YiJingFramework.Painting.Presenting
 - YiJingFramework.Annotating.Zhouyi
+- YiJingFramework.EntityRelationships.MostAccepted
 
 ## 代码 Codes
 ```csharp
 using System.Diagnostics;
-using YiJingFramework.Core;
 using YiJingFramework.Annotating.Zhouyi;
 using YiJingFramework.Annotating.Zhouyi.Entities;
-using YiJingFramework.Painting.Deriving.Extensions;
-
+using YiJingFramework.EntityRelationships.MostAccepted.GuaDerivingExtensions;
+using YiJingFramework.PrimitiveTypes;
+using YiJingFramework.PrimitiveTypes.GuaWithFixedCount;
 
 DateTime dateTime = DateTime.Now;
 Console.WriteLine(dateTime.ToString("yyyy/MM/dd HH:mm"));
 Console.WriteLine();
 
-#region 获取年月日时数 Get the number of year, month, day and hour
+#region 获取年月日时数 Get the number of year, month, date and hour
 if (dateTime.Hour is 23)
     dateTime = dateTime.AddHours(1);
 // 使 23:00 到 24:00 取为后一日。
@@ -44,15 +42,15 @@ Console.WriteLine();
 
 int yearBranchIndex = lunar.YearZhiIndex;
 // 获取支序数。
-// 不像 YiJingFramework.StemsAndBranches ，
+// 不像 YiJingFramework.PrimitiveTypes ，
 // 此库给出所谓的序数以子为零。
 // Get the index of earthly branch.
-// Unlike YiJingFramework.StemsAndBranches,
-// the so-called indexes given by this repository use 0 to represents Zi(usually considered the first branch).
+// Unlike YiJingFramework.PrimitiveTypes,
+// the indexes given by this repository use 0 to represents Zi (usually considered the first branch).
 
 int yearNumber = yearBranchIndex + 1;
 // 《梅花易数》：如子年一数丑年二数直至亥年十二数
-// Year number will be 1 if it's in the years of Zi, 2 in Chou(usually considered the second), ... 12 in Hai(usually considered the 12th).
+// Year number will be 1 if it's in the years of Zi, 2 in Chou (usually considered the second), ..., 12 in Hai (usually considered the 12th).
 
 int monthNumber = Math.Abs(lunar.Month);
 // 《梅花易数》：月如正月一数直至十二月亦作十二数
@@ -90,27 +88,27 @@ changingLineIndex = changingLineIndex == 0 ? 6 : changingLineIndex;
 
 #region 取本卦卦画 Get the original hexagram's painting
 
-Painting GetTrigramPainting(int innateNumber)
+static GuaTrigram GetTrigramPainting(int numberXiantian)
 {
-    innateNumber--;
-    Debug.Assert(innateNumber is >= 0b000 and <= 0b111);
-    return new Painting(
-        new YinYang((innateNumber & 0b100) is 0),
-        new YinYang((innateNumber & 0b010) is 0),
-        new YinYang((innateNumber & 0b001) is 0));
+    numberXiantian--;
+    Debug.Assert(numberXiantian is >= 0b000 and <= 0b111);
+    return new GuaTrigram(
+        new Yinyang((numberXiantian & 0b100) is 0),
+        new Yinyang((numberXiantian & 0b010) is 0),
+        new Yinyang((numberXiantian & 0b001) is 0));
 }
 // 这是通过先天八卦数获取画卦的数学方法。
 // 也可以直接查表：1->☰ 2->☱ 3->☲ 4->☳ 5->☴ 6->☵ 7->☶ 8->☷
-// This is a mathematical method to get the painting through the innate number.
+// This is a mathematical method to get the painting through the Xiantian number.
 // You can also directly do this by the map：1->☰ 2->☱ 3->☲ 4->☳ 5->☴ 6->☵ 7->☶ 8->☷
 
-Painting upperPainting = GetTrigramPainting(upperNumber);
-Painting lowerPainting = GetTrigramPainting(lowerNumber);
+GuaTrigram upperPainting = GetTrigramPainting(upperNumber);
+GuaTrigram lowerPainting = GetTrigramPainting(lowerNumber);
 // 获取上卦和下卦的卦画。
 // Get the paintings of the upper and the lower trigram.
 
-IEnumerable<YinYang> originalLines = lowerPainting.Concat(upperPainting);
-Painting originalPainting = new Painting(originalLines);
+IEnumerable<Yinyang> originalLines = lowerPainting.Concat(upperPainting);
+GuaHexagram originalPainting = new GuaHexagram(originalLines);
 // 将上卦下卦放在一起得到一个六爻卦，这就是本卦。
 // Put the trigrams together to get a hexagram, which is called the original hexagram.
 
@@ -118,20 +116,20 @@ Painting originalPainting = new Painting(originalLines);
 
 #region 取变卦卦画 Get the changed hexagram's painting
 
-Painting changedPainting = originalPainting.ChangeLines(changingLineIndex - 1);
-// 这里使用了 YiJingFramework.Painting.Deriving 包提供的拓展方法，
+GuaHexagram changedPainting = originalPainting.ReverseLines(changingLineIndex - 1);
+// 这里使用了 YiJingFramework.EntityRelationships.MostAccepted 提供的拓展方法，
 // 把对应的爻阴阳性质改变，返回新的卦，即变卦。
-// Here we used the extension method provided by the YiJingFramework.Painting.Deriving package.
+// Here we used the extension method provided by the YiJingFramework.EntityRelationships.MostAccepted.
 // The specific line's yin-yang attribute has been changed and a new hexagram has returned, which is called as the changed hexagram.
 
 #endregion
 
 #region 取互卦卦画 Get the overlapping hexagram's painting
 
-Painting overlappingPainting = originalPainting.ToOverlapping();
-// 仍是 YiJingFramework.Painting.Deriving 包提供的拓展方法，
+GuaHexagram overlappingPainting = originalPainting.Hugua();
+// 仍是 YiJingFramework.EntityRelationships.MostAccepted 包提供的拓展方法，
 // 二三四爻作下卦，三四五爻作上卦产生新的卦，这就是互卦。
-// It's also an extension method provided by the YiJingFramework.Painting.Deriving package.
+// It's also an extension method provided by the YiJingFramework.EntityRelationships.MostAccepted package.
 // It returns a new hexagram which will be made up of --
 // the second line, the third line, the fourth line,
 // then the third line again, the fourth line again and the fifth line 
@@ -139,26 +137,29 @@ Painting overlappingPainting = originalPainting.ToOverlapping();
 // This new hexagram is the so-called overlapping hexagram.
 
 if (overlappingPainting == originalPainting)
-    overlappingPainting = changedPainting.ToOverlapping();
+    overlappingPainting = changedPainting.Hugua();
 // 《梅花易数》：乾坤无互互其变卦
 // If the original is Qian or Kun, which does not have a overlapping hexagram, use the changed's instead. 
 
 #endregion
 
 #region 将三个卦打印出来 Print the three hexagrams
+static void PrintHexagram(GuaHexagram hexagram)
+{
+    for (int i = 5; i >= 0; i--)
+        Console.WriteLine(hexagram[i].IsYang ? "-----" : "-- --");
+}
 
-YiJingFramework.Painting.Presenting.Converters.StringConverter stringConverter =
-    new("-----", "-- --", Environment.NewLine);
 Console.WriteLine("本卦 THE ORIGINAL");
-Console.WriteLine(stringConverter.ConvertTo(originalPainting));
+PrintHexagram(originalPainting);
 Console.WriteLine();
 
 Console.WriteLine("互卦 THE OVERLAPPING");
-Console.WriteLine(stringConverter.ConvertTo(overlappingPainting));
+PrintHexagram(overlappingPainting);
 Console.WriteLine();
 
 Console.WriteLine("变卦 THE CHANGED");
-Console.WriteLine(stringConverter.ConvertTo(changedPainting));
+PrintHexagram(changedPainting);
 Console.WriteLine();
 
 #endregion
@@ -203,17 +204,17 @@ Console.WriteLine($"象曰：{changingLine.Xiang}");
 ## 输出样例 Sample Output
 
 ```plain
-2023/01/07 17:52
+2023/05/05 14:44
 
-二〇二二年腊月十六
+二〇二三年三月十六
 
 本卦 THE ORIGINAL
 -----
 -- --
 -- --
 -----
------
------
+-- --
+-- --
 
 互卦 THE OVERLAPPING
 -- --
@@ -221,17 +222,17 @@ Console.WriteLine($"象曰：{changingLine.Xiang}");
 -----
 -- --
 -----
------
+-- --
 
 变卦 THE CHANGED
 -----
+-- --
+-- --
 -----
 -- --
 -----
------
------
 
-得大畜之小畜，互震兌。
-易曰：豶豕之牙，吉。
-象曰：六五之吉，有慶也。
+得艮之賁，互震坎。
+易曰：艮其趾，無咎，利永貞。
+象曰：艮其趾，未失正也。
 ```
