@@ -1,4 +1,5 @@
-﻿using System.Diagnostics;
+﻿using LunarCsharpYiJingFrameworkExtensions;
+using System.Diagnostics;
 using YiJingFramework.Annotating.Zhouyi;
 using YiJingFramework.Annotating.Zhouyi.Entities;
 using YiJingFramework.EntityRelationships.MostAccepted.GuaDerivingExtensions;
@@ -22,21 +23,13 @@ var lunar = Lunar.Lunar.FromDate(dateTime);
 Console.WriteLine(lunar);
 Console.WriteLine();
 
-int yearBranchIndex = lunar.YearZhiIndex;
-// 获取支序数。
-// 不像 YiJingFramework.PrimitiveTypes ，
-// 此库给出所谓的序数以子为零。
-// Get the index of earthly branch.
-// Unlike YiJingFramework.PrimitiveTypes,
-// the indexes given by this repository use 0 to represents Zi (usually considered the first branch).
-
-int yearNumber = yearBranchIndex + 1;
+int yearNumber = lunar.YearZhi().Index;
 // 《梅花易数》：如子年一数丑年二数直至亥年十二数
-// Year number will be 1 if it's in the years of Zi, 2 in Chou (usually considered the second), ..., 12 in Hai (usually considered the 12th).
+// The year number will be 1 if it's in the years of Zi, 2 in Chou (usually considered the second), ..., 12 in Hai (usually considered the 12th).
 
 int monthNumber = Math.Abs(lunar.Month);
 // 《梅花易数》：月如正月一数直至十二月亦作十二数
-// Month number will be the 1-based index of the (lunar) month.
+// The month number is the 1-based index of the (lunar) month.
 
 int dayNumber = lunar.Day;
 // 《梅花易数》：日数如初一一数直至三十日为三十数
