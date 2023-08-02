@@ -1,110 +1,23 @@
 ﻿using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
+using System.Net.Http.Json;
 using YiJingFramework.Annotating.Zhouyi;
 using YiJingFramework.Annotating.Zhouyi.Entities;
 using YiJingFramework.EntityRelationships.MostAccepted.GuaDerivingExtensions;
 using YiJingFramework.PrimitiveTypes;
 using YiJingFramework.PrimitiveTypes.GuaWithFixedCount;
 
-var current = DateTime.Now;
-
-static DateOnly? ParseToDateTime(string s, string? format = null)
+internal static class Program
 {
-    format = format ?? "yyyyMMdd";
-    return DateOnly.TryParseExact(s, format, out var result) ? result : null;
-}
-
-var date = args.Length switch
-{
-    1 => ParseToDateTime(args[0]),
-    2 => ParseToDateTime(args[0], args[1]),
-    _ => null
-} ?? DateOnly.FromDateTime(current);
-
-new Program(date).Run();
-
-internal partial class Program
-{
-    private readonly DateOnly date;
-    private readonly GuaHexagram hexagram;
-
-    private readonly ZhouyiStore zhouyi;
-
-    private static GuaHexagram GetHexagram(int seed)
+    private static async Task Main()
     {
-        static IEnumerable<Yinyang> RandomYinYangs(int seed)
-        {
-            Random random = new Random(seed);
-            for (; ; )
-                yield return (Yinyang)random.Next(0, 2);
-        }
-        return new GuaHexagram(RandomYinYangs(seed).Take(6));
-    }
+        var zhouyi = await DownloadStoreAsync();
+        var today = DateOnly.FromDateTime(DateTime.Now);
+        var gua = GetTheGuaOf(today);
 
-    internal Program(DateOnly date)
-    {
-        this.date = date;
-        this.hexagram = GetHexagram(date.DayNumber);
-
-        var storeFile = File.ReadAllText("./zhouyi.json");
-        var store = ZhouyiStore.DeserializeFromJsonString(storeFile);
-        Debug.Assert(store is not null);
-
-        this.zhouyi = store;
-    }
-
-    private void Print(GuaHexagram hexagramPainting, string message = "")
-    {
-        ZhouyiHexagram hexagram = zhouyi.GetHexagram(hexagramPainting);
-
-        var (upperPainting, lowerPainting) = hexagram.SplitToTrigrams();
-        var upper = zhouyi.GetTrigram(upperPainting);
-        var lower = zhouyi.GetTrigram(lowerPainting);
-
-        Console.Clear();
-
-        Console.WriteLine($"{this.date:yyyy年 M月 d日}   {message}");
-        Console.WriteLine();
-
-        if (upperPainting == lowerPainting)
-            Console.WriteLine($"{hexagram.Name}為{upper.Nature}");
-        else
-            Console.WriteLine($"{upper.Nature}{lower.Nature}{hexagram.Name}");
-
-        Console.WriteLine($"{hexagram.Name}，{hexagram.Text}");
-        Console.WriteLine($"象曰：{hexagram.Xiang}");
-        Console.WriteLine($"彖曰：{hexagram.Tuan}");
-        Console.WriteLine();
-
-        var hexagramLines = hexagram.EnumerateLines(false)
-            .Reverse()
-            .Append(hexagram.Yong);
-
-        var linePatterns = hexagramLines.Select(line => {
-            if (line.YinYang.HasValue)
-                return line.YinYang.Value.IsYang ? "-----   " : "-- --   ";
-            return "        ";
-        });
-
-        var lineTexts = hexagramLines.Select(line => line.LineText);
-        var padding = lineTexts.Select(line => {
-            return line is null ? 0 : line.Length;
-        }).Max() + 2;
-        lineTexts = lineTexts.Select(text => text?.PadRight(padding, '　'));
-
-        var xiangTexts = hexagramLines.Select(line => line.Xiang);
-
-        foreach (var (pattern, text, xiangText) in linePatterns.Zip(lineTexts, xiangTexts))
-            Console.WriteLine($"{pattern}{text}{xiangText}");
-        Console.WriteLine();
-    }
-
-    internal void Run()
-    {
-        string message = "每日一卦 A Hexagram Per Day";
+        var message = "每日一卦 A Hexagram Per Day";
         for (; ; )
         {
-            this.Print(this.hexagram, message);
+            PrintGua(zhouyi, today, gua, message);
 
             Console.WriteLine("==================================");
             Console.WriteLine();
@@ -133,22 +46,20 @@ internal partial class Program
                 continue;
             }
 
-#pragma warning disable IDE0018
-            GuaHexagram? result;
-            string newMessage;
-#pragma warning restore IDE0018
-            var succeeded = inputs[0] switch
+            (var derivedGua, message) = inputs[0] switch
             {
-                "1" => this.ApplyDerivation1(inputs.Skip(1), out result, out newMessage),
-                "2" => this.ApplyDerivation2(out result, out newMessage),
-                "3" => this.ApplyDerivation3(out result, out newMessage),
-                "4" => this.ApplyDerivation4(out result, out newMessage),
-                _ => this.ApplyDerivationBadInput(out result, out newMessage)
+                "1" => ApplyDerivation1(gua, inputs.Skip(1)),
+                "2" => ApplyDerivation2(gua),
+                "3" => ApplyDerivation3(gua),
+                "4" => ApplyDerivation4(gua),
+                _ => ApplyDerivationBadInput()
             };
-            if (succeeded)
+
+            if (derivedGua is not null)
             {
-                Debug.Assert(result is not null);
-                this.Print(result, newMessage);
+                PrintGua(zhouyi, today, derivedGua, message);
+                message = "每日一卦 A Hexagram Per Day";
+
                 Console.WriteLine("==================================");
                 Console.WriteLine();
                 Console.WriteLine("输入任意内容以返回 Input Anything To Get Back");
@@ -156,69 +67,110 @@ internal partial class Program
                 Console.WriteLine("==================================");
                 Console.WriteLine();
                 _ = Console.ReadLine();
-                message = "每日一卦 A Hexagram Per Day";
             }
-            else
-                message = newMessage;
         }
     }
 
-#pragma warning disable CA1822 // 将成员标记为 static
-    private bool ApplyDerivationBadInput(
-        [NotNullWhen(true)] out GuaHexagram? result,
-        out string message)
+    private static async ValueTask<ZhouyiStore> DownloadStoreAsync()
     {
-        result = null;
-        message = "请从中选择一项 Please Select One Item";
-        return false;
+        var uri = "https://yueyinqiu.github.io/my-yijing-annotation-stores/975345ca/2023-08-02-1.json";
+        using var client = new HttpClient();
+        var store = await client.GetFromJsonAsync<ZhouyiStore>(uri);
+        Debug.Assert(store is not null);
+        return store;
     }
-#pragma warning restore CA1822 // 将成员标记为 static
 
-    private bool ApplyDerivation1(
-        IEnumerable<string> args,
-        [NotNullWhen(true)] out GuaHexagram? result,
-        out string message)
+    private static GuaHexagram GetTheGuaOf(DateOnly date)
+    {
+        static IEnumerable<Yinyang> RandomYinYangs(int seed)
+        {
+            Random random = new Random(seed);
+            for (; ; )
+                yield return (Yinyang)random.Next(0, 2);
+        }
+
+        var randomLines = RandomYinYangs(date.DayNumber).Take(6);
+        return new GuaHexagram(randomLines);
+    }
+
+    private static void PrintGua(
+        ZhouyiStore zhouyi,
+        DateOnly date, 
+        GuaHexagram gua, 
+        string message)
+    {
+        ZhouyiHexagram hexagram = zhouyi.GetHexagram(gua);
+
+        var (upperPainting, lowerPainting) = hexagram.SplitToTrigrams();
+        var upper = zhouyi.GetTrigram(upperPainting);
+        var lower = zhouyi.GetTrigram(lowerPainting);
+
+        Console.Clear();
+
+        Console.WriteLine($"{date:yyyy年 M月 d日}   {message}");
+        Console.WriteLine();
+
+        if (upperPainting == lowerPainting)
+            Console.WriteLine($"{hexagram.Name}为{upper.Nature}");
+        else
+            Console.WriteLine($"{upper.Nature}{lower.Nature}{hexagram.Name}");
+
+        Console.WriteLine($"{hexagram.Name}，{hexagram.Text}");
+        Console.WriteLine($"象曰：{hexagram.Xiang}");
+        Console.WriteLine($"彖曰：{hexagram.Tuan}");
+        Console.WriteLine();
+
+        var lineTextPadding = hexagram.EnumerateLines()
+            .Select(line => line.LineText?.Length ?? 0)
+            .Max() + 2;
+
+        foreach (var line in hexagram.EnumerateLines().Reverse())
+        {
+            var figure = line.YinYang?.IsYang switch
+            {
+                true => "-----   ",
+                false => "-- --   ",
+                null => "        "
+            };
+            var text = line.LineText?.PadRight(lineTextPadding, '　');
+            Console.WriteLine($"{figure}{text}{line.Xiang}");
+        }
+        Console.WriteLine();
+    }
+
+    private static (GuaHexagram?, string) ApplyDerivationBadInput()
+    {
+        return (null, "请从中选择一项 Please Select One Item");
+    }
+
+    private static (GuaHexagram?, string) ApplyDerivation1(
+        GuaHexagram gua, IEnumerable<string> args)
     {
         List<int> values = new List<int>();
         List<int> valuesMinus1 = new List<int>();
         foreach (var str in args)
         {
-            if (!int.TryParse(str, out int value) || value < 1 || value > 6)
-            {
-                result = null;
-                message = "参数错误 Invalid Arguments";
-                return false;
-            }
+            if (!int.TryParse(str, out int value))
+                return (null, "参数错误 Invalid Arguments");
             values.Add(value);
             valuesMinus1.Add(value - 1);
         }
-        result = this.hexagram.ReverseLines(valuesMinus1);
-        message = $"变卦 Changed ({string.Join(' ', values)})";
-        return true;
+        var result = gua.ReverseLines(valuesMinus1, false);
+        return (result, $"变卦 Changed ({string.Join(' ', values)})");
     }
 
-    private bool ApplyDerivation2(
-        [NotNullWhen(true)] out GuaHexagram? result,
-        out string message)
+    private static (GuaHexagram?, string) ApplyDerivation2(GuaHexagram gua)
     {
-        result = this.hexagram.Cuogua();
-        message = "错卦 Laterally Linked";
-        return true;
+        return (gua.Cuogua(), "错卦 Laterally Linked");
     }
-    private bool ApplyDerivation3(
-        [NotNullWhen(true)] out GuaHexagram? result,
-        out string message)
+
+    private static (GuaHexagram?, string) ApplyDerivation3(GuaHexagram gua)
     {
-        result = this.hexagram.Hugua();
-        message = "互卦 Overlapping";
-        return true;
+        return (gua.Hugua(), "互卦 Overlapping");
     }
-    private bool ApplyDerivation4(
-        [NotNullWhen(true)] out GuaHexagram? result,
-        out string message)
+
+    private static (GuaHexagram?, string) ApplyDerivation4(GuaHexagram gua)
     {
-        result = this.hexagram.Zonggua();
-        message = "综卦 Overturned";
-        return true;
+        return (gua.Zonggua(), "综卦 Overturned");
     }
 }
