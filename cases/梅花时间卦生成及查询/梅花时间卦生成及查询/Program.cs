@@ -1,5 +1,6 @@
-﻿using LunarCsharpYiJingFrameworkExtensions;
-using System.Diagnostics;
+﻿using System.Diagnostics;
+using System.Net.Http.Json;
+using LunarCsharpYiJingFrameworkExtensions;
 using YiJingFramework.Annotating.Zhouyi;
 using YiJingFramework.Annotating.Zhouyi.Entities;
 using YiJingFramework.EntityRelationships.MostAccepted.GuaDerivingExtensions;
@@ -35,8 +36,7 @@ int dayNumber = lunar.Day;
 // 《梅花易数》：日数如初一一数直至三十日为三十数
 // just like the month number
 
-int timeBranchIndex = lunar.TimeZhiIndex;
-int timeNumber = timeBranchIndex + 1;
+int timeNumber = lunar.TimeZhi().Index;
 // 《梅花易数》：时如子时一数直至亥时为十二数
 // just like the year number
 
@@ -141,18 +141,22 @@ Console.WriteLine();
 
 #region 查询《周易》及《易传》 Looking it up in Zhouyi and Yizhuan
 
-var storeFile = File.ReadAllText("./zhouyi.json");
-var zhouyi = ZhouyiStore.DeserializeFromJsonString(storeFile);
+var storeUri = "https://yueyinqiu.github.io/my-yijing-annotation-stores/975345ca/2023-08-02-1.json";
+using var client = new HttpClient();
+var zhouyi = await client.GetFromJsonAsync<ZhouyiStore>(storeUri);
 Debug.Assert(zhouyi is not null);
 // 初始化 ZhouyiStore 。
+// 这里是从网上下载了一个注解仓库，当然也可以使用本地文件之类。
 // Initialize ZhouyiStore.
+// Here the annotation store is downloaded from the internet,
+// You can also load it from elsewhere such as from a local file.
 
 ZhouyiHexagram originalHexagram = zhouyi.GetHexagram(originalPainting);
 ZhouyiHexagramLine changingLine = originalHexagram.EnumerateLines().ElementAt(changingLineIndex - 1);
 ZhouyiHexagram changedHexagram = zhouyi.GetHexagram(changedPainting);
 ZhouyiHexagram overlappingHexagram = zhouyi.GetHexagram(overlappingPainting);
 
-Console.Write($"得{originalHexagram.Name}之{changedHexagram.Name}，");
+Console.Write($"{originalHexagram.Name}之{changedHexagram.Name}，");
 // Console.Write($"It's {originalHexagram.Name} changing to {changedHexagram.Name}, ");
 
 var (overlappingUpperPainting, overlappingLowerPainting) = overlappingHexagram.SplitToTrigrams();
