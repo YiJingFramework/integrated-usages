@@ -9,8 +9,8 @@
 
   <ItemGroup>
     <PackageReference Include="LunarCsharpYiJingFrameworkExtensions" Version="1.0.0" />
-    <PackageReference Include="YiJingFramework.Annotating.Zhouyi" Version="5.0.0" />
-    <PackageReference Include="YiJingFramework.EntityRelationships.MostAccepted" Version="2.0.0" />
+    <PackageReference Include="YiJingFramework.Annotating.Zhouyi" Version="5.1.0" />
+    <PackageReference Include="YiJingFramework.EntityRelations" Version="1.0.0" />
   </ItemGroup>
 
 </Project>
