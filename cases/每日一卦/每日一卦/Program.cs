@@ -2,7 +2,7 @@
 using System.Net.Http.Json;
 using YiJingFramework.Annotating.Zhouyi;
 using YiJingFramework.Annotating.Zhouyi.Entities;
-using YiJingFramework.EntityRelationships.MostAccepted.GuaDerivingExtensions;
+using YiJingFramework.EntityRelations.GuaDerivations.Extensions;
 using YiJingFramework.PrimitiveTypes;
 using YiJingFramework.PrimitiveTypes.GuaWithFixedCount;
 
@@ -100,17 +100,14 @@ internal static class Program
         string message)
     {
         ZhouyiHexagram hexagram = zhouyi.GetHexagram(gua);
-
-        var (upperPainting, lowerPainting) = hexagram.SplitToTrigrams();
-        var upper = zhouyi.GetTrigram(upperPainting);
-        var lower = zhouyi.GetTrigram(lowerPainting);
+        var (upper, lower) = hexagram.SplitToTrigrams(zhouyi);
 
         Console.Clear();
 
         Console.WriteLine($"{date:yyyy年 M月 d日}   {message}");
         Console.WriteLine();
 
-        if (upperPainting == lowerPainting)
+        if (upper.Painting == lower.Painting)
             Console.WriteLine($"{hexagram.Name}为{upper.Nature}");
         else
             Console.WriteLine($"{upper.Nature}{lower.Nature}{hexagram.Name}");
@@ -155,7 +152,7 @@ internal static class Program
             values.Add(value);
             valuesMinus1.Add(value - 1);
         }
-        var result = gua.ReverseLines(valuesMinus1, false);
+        var result = gua.ChangeLines(valuesMinus1, false);
         return (result, $"变卦 Changed ({string.Join(' ', values)})");
     }
 

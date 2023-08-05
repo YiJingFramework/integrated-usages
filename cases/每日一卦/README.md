@@ -11,7 +11,7 @@ When this use case is opened, one of the hexagrams will be shown (it will be the
 All the packages could be found on [nuget.org](https://www.nuget.org/).
 
 - YiJingFramework.Annotating.Zhouyi
-- YiJingFramework.EntityRelationships.MostAccepted
+- YiJingFramework.EntityRelations
 
 ## 代码 Codes
 
@@ -20,7 +20,7 @@ using System.Diagnostics;
 using System.Net.Http.Json;
 using YiJingFramework.Annotating.Zhouyi;
 using YiJingFramework.Annotating.Zhouyi.Entities;
-using YiJingFramework.EntityRelationships.MostAccepted.GuaDerivingExtensions;
+using YiJingFramework.EntityRelations.GuaDerivations.Extensions;
 using YiJingFramework.PrimitiveTypes;
 using YiJingFramework.PrimitiveTypes.GuaWithFixedCount;
 
@@ -118,17 +118,14 @@ internal static class Program
         string message)
     {
         ZhouyiHexagram hexagram = zhouyi.GetHexagram(gua);
-
-        var (upperPainting, lowerPainting) = hexagram.SplitToTrigrams();
-        var upper = zhouyi.GetTrigram(upperPainting);
-        var lower = zhouyi.GetTrigram(lowerPainting);
+        var (upper, lower) = hexagram.SplitToTrigrams(zhouyi);
 
         Console.Clear();
 
         Console.WriteLine($"{date:yyyy年 M月 d日}   {message}");
         Console.WriteLine();
 
-        if (upperPainting == lowerPainting)
+        if (upper.Painting == lower.Painting)
             Console.WriteLine($"{hexagram.Name}为{upper.Nature}");
         else
             Console.WriteLine($"{upper.Nature}{lower.Nature}{hexagram.Name}");
@@ -173,7 +170,7 @@ internal static class Program
             values.Add(value);
             valuesMinus1.Add(value - 1);
         }
-        var result = gua.ReverseLines(valuesMinus1, false);
+        var result = gua.ChangeLines(valuesMinus1, false);
         return (result, $"变卦 Changed ({string.Join(' ', values)})");
     }
 
@@ -201,20 +198,20 @@ internal static class Program
 This use case contains human-computer interaction, so only part of the output is provided here.
 
 ```plain
-2023年 8月 2日   每日一卦 A Hexagram Per Day
+2023年 8月 5日   每日一卦 A Hexagram Per Day
 
-天泽履
-履，履虎尾不咥人亨
-象曰：上天下泽履君子以辨上下定民志
-彖曰：履柔履刚也说而应乎乾是以履虎尾不咥人亨刚中正履帝位而不疚光明也
+泽水困
+困，亨贞大人吉无咎有言不信
+象曰：泽无水困君子以致命遂志
+彖曰：困刚掩也险以说困而不失其所亨其唯君子乎贞大人吉以刚中也有言不信尚口乃穷也
 
 
------   视履考祥其旋元吉　　　　　　　　　　　　元吉在上大有庆也
------   夬履贞厉　　　　　　　　　　　　　　　　夬履贞厉位正当也
------   履虎尾愬愬终吉　　　　　　　　　　　　　愬愬终吉志行也
--- --   眇能视跛能履履虎尾咥人凶武人为于大君　　眇能视不足以有明也跛能履不足以与行也咥人之凶位不当也武人为于大君志刚也
------   履道坦坦幽人贞吉　　　　　　　　　　　　幽人贞吉中不自乱也
------   素履往无咎　　　　　　　　　　　　　　　素履之往独行愿也
+-- --   困于葛藟于臲卼曰动悔有悔征吉　　　　困于葛藟未当也动悔有悔吉行也
+-----   劓刖困于赤绂乃徐有说利用祭祀　　　　劓刖志未得也乃徐有说以中直也利用祭祀受福也
+-----   来徐徐困于金车吝有终　　　　　　　　来徐徐志在下也虽不当位有与也
+-- --   困于石据于蒺藜入于其宫不见其妻凶　　据于蒺藜乘刚也入于其宫不见其妻不祥也
+-----   困于酒食朱绂方来利用亨祀征凶无咎　　困于酒食中有庆也
+-- --   臀困于株木入于幽谷三岁不见　　　　　入于幽谷幽不明也
 
 ==================================
 
@@ -234,20 +231,20 @@ e. Exit
 ```
 
 ```plain
-2023年 8月 2日   变卦 Changed (1 2 4 5 6)
+2023年 8月 5日   变卦 Changed (1 3 6)
 
-坤为地
-坤，元亨利牝马之贞君子有攸往先迷后得主利西南得朋东北丧朋安贞吉
-象曰：地势坤君子以厚德载物
-彖曰：至哉坤元万物资生乃顺承天坤厚载物德合无疆含弘光大品物咸亨牝马地类行地无疆柔顺利贞君子攸行先迷失道后顺得常西南得朋乃与类行东北丧朋乃终有庆安贞之吉应地无疆
+乾为天
+乾，元亨利贞
+象曰：天行健君子以自强不息
+彖曰：大哉乾元万物资始乃统天云行雨施品物流形大明终始六位时成时乘六龙以御天乾道变化各正性命保合大和乃利贞首出庶物万国咸宁
 
-        利永贞　　　　　　　　　　　用六永贞以大终也
--- --   龙战于野其血玄黄　　　　　　龙战于野其道穷也
--- --   黄裳元吉　　　　　　　　　　黄裳元吉文在中也
--- --   括囊无咎无誉　　　　　　　　括囊无咎慎不害也
--- --   含章可贞或从王事无成有终　　含章可贞以时发也或从王事知光大也
--- --   直方大不习无不利　　　　　　六二之动直以方也不习无不利地道光也
--- --   履霜坚冰至　　　　　　　　　履霜坚冰阴始凝也驯致其道至坚冰也
+        见群龙无首吉　　　　　　　　用九天德不可为首也
+-----   亢龙有悔　　　　　　　　　　亢龙有悔盈不可久也
+-----   飞龙在天利见大人　　　　　　飞龙在天大人造也
+-----   或跃在渊无咎　　　　　　　　或跃在渊进无咎也
+-----   君子终日乾乾夕惕若厉无咎　　终日乾乾反复道也
+-----   见龙在田利见大人　　　　　　见龙在田德施普也
+-----   潜龙勿用　　　　　　　　　　潜龙勿用阳在下也
 
 ==================================
 
@@ -257,20 +254,20 @@ e. Exit
 ```
 
 ```plain
-2023年 8月 2日   综卦 Overturned
+2023年 8月 5日   综卦 Overturned
 
-风天小畜
-小畜，亨密云不雨自我西郊
-象曰：风行天上小畜君子以懿文德
-彖曰：小畜柔得位而上下应之曰小畜健而巽刚中而志行乃亨密云不雨尚往也自我西郊施未行也
+水风井
+井，改邑不改井无丧无得往来井井汔至亦未繘井羸其瓶凶
+象曰：木上有水井君子以劳民劝相
+彖曰：巽乎水而上水井井养而不穷也改邑不改井乃以刚中也汔至亦未繘井未有功也羸其瓶是以凶也
 
 
------   既雨既处尚德载妇贞厉月几望君子征凶　　既雨既处德积载也君子征凶有所疑也
------   有孚挛如富以其邻　　　　　　　　　　　有孚挛如不独富也
--- --   有孚血去惕出无咎　　　　　　　　　　　有孚惕出上合志也
------   舆说辐夫妻反目　　　　　　　　　　　　夫妻反目不能正室也
------   牵复吉　　　　　　　　　　　　　　　　牵复在中亦不自失也
------   复自道何其咎吉　　　　　　　　　　　　复自道其义吉也
+-- --   井收勿幕有孚元吉　　　　　　　　　　　元吉在上大成也
+-----   井冽寒泉食　　　　　　　　　　　　　　寒泉之食中正也
+-- --   井甃无咎　　　　　　　　　　　　　　　井甃无咎修井也
+-----   井渫不食为我心恻可用汲王明并受其福　　井渫不食行恻也求王明受福也
+-----   井谷射鲋瓮敝漏　　　　　　　　　　　　井谷射鲋无与也
+-- --   井泥不食旧井无禽　　　　　　　　　　　井泥不食下也旧井无禽时舍也
 
 ==================================
 
