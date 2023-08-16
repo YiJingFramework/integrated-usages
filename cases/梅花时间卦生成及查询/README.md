@@ -10,15 +10,16 @@ This use case generates the time based hexagrams in plum blossom numerology and 
 
 All the packages could be found on [nuget.org](https://www.nuget.org/).
 
-- LunarCsharpYiJingFrameworkExtensions
+- ChineseLunisolarCalendarYjFwkExtensions
 - YiJingFramework.Annotating.Zhouyi
 - YiJingFramework.EntityRelations
 
 ## 代码 Codes
 ```csharp
+using ChineseLunisolarCalendarYjFwkExtensions.Extensions;
 using System.Diagnostics;
+using System.Globalization;
 using System.Net.Http.Json;
-using LunarCsharpYiJingFrameworkExtensions;
 using YiJingFramework.Annotating.Zhouyi;
 using YiJingFramework.Annotating.Zhouyi.Entities;
 using YiJingFramework.EntityRelations.GuaDerivations.Extensions;
@@ -26,42 +27,31 @@ using YiJingFramework.PrimitiveTypes;
 using YiJingFramework.PrimitiveTypes.GuaWithFixedCount;
 
 DateTime dateTime = DateTime.Now;
-Console.WriteLine(dateTime.ToString("yyyy/MM/dd HH:mm"));
-Console.WriteLine();
 
 #region 获取年月日时数 Get the number of year, month, day and hour
-if (dateTime.Hour is 23)
-    dateTime = dateTime.AddHours(1);
-// 使 23:00 到 24:00 取为后一日。
-// Let 23:00-24:00 to be considered as the next day.
+var chineseCalendar = new ChineseLunisolarCalendar();
 
-Lunar.Lunar lunar = Lunar.Lunar.FromDate(dateTime);
-// 获取农历时间。
-// Get lunar time.
-
-Console.WriteLine(lunar);
-Console.WriteLine();
-
-int yearNumber = lunar.YearZhi().Index;
+var (_, yearDizhi) = chineseCalendar.GetYearGanzhi(dateTime);
+int yearNumber = yearDizhi.Index;
 // 《梅花易数》：如子年一数丑年二数直至亥年十二数
 // The year number will be 1 if it's in the years of Zi, 2 in Chou (usually considered the second), ..., 12 in Hai (usually considered the 12th).
 
-int monthNumber = Math.Abs(lunar.Month);
+int monthNumber = chineseCalendar.GetMonth(dateTime);
 // 《梅花易数》：月如正月一数直至十二月亦作十二数
+// 书中没有给出闰月的处理方法，此处简单起见也不另加处理了。
 // The month number is the 1-based index of the (lunar) month.
+// Leap months are not mentioned in the book. To make it simpler, no additional actions are taken here.
 
-int dayNumber = lunar.Day;
+int dayNumber = chineseCalendar.GetDayOfMonth(dateTime);
 // 《梅花易数》：日数如初一一数直至三十日为三十数
 // just like the month number
 
-int timeNumber = lunar.TimeZhi().Index;
+int timeNumber = chineseCalendar.GetShichenDizhi(dateTime).Index;
 // 《梅花易数》：时如子时一数直至亥时为十二数
 // just like the year number
-
 #endregion
 
 #region 算卦数 Calculate the numbers of the hexagrams
-
 int upperNumber = (yearNumber + monthNumber + dayNumber) % 8;
 upperNumber = upperNumber == 0 ? 8 : upperNumber;
 // 《梅花易数》：年月日共计几数以八除之以零数作上卦
@@ -76,11 +66,9 @@ int changingLineIndex = (yearNumber + monthNumber + dayNumber + timeNumber) % 6;
 changingLineIndex = changingLineIndex == 0 ? 6 : changingLineIndex;
 // 《梅花易数》：就以除六数作动爻
 // just do as the above two lines to get the index of the changing line
-
 #endregion
 
 #region 取本卦卦画 Get the original hexagram
-
 static GuaTrigram GetTrigram(int numberXiantian)
 {
     numberXiantian--;
@@ -104,21 +92,17 @@ IEnumerable<Yinyang> originalLines = lowerTrigram.Concat(upperTrigram);
 GuaHexagram originalHexagram = new GuaHexagram(originalLines);
 // 将上卦下卦放在一起得到一个六爻卦，这就是本卦。
 // Put the trigrams together to get a hexagram, which is called the original hexagram.
-
 #endregion
 
 #region 取变卦卦画 Get the changed hexagram
-
 GuaHexagram changedHexagram = originalHexagram.ChangeLines(changingLineIndex - 1);
 // 这里使用了 YiJingFramework.EntityRelations 提供的拓展方法，
 // 把对应的爻阴阳性质改变，返回新的卦，即变卦。
 // Here we used the extension method provided by the YiJingFramework.EntityRelations.
 // The specific line's yin-yang attribute has been changed and a new hexagram has returned, which is called as the changed hexagram.
-
 #endregion
 
 #region 取互卦卦画 Get the overlapping hexagram
-
 GuaHexagram overlappingHexagram = originalHexagram.Hugua();
 // 仍是 YiJingFramework.EntityRelations 包提供的拓展方法，
 // 二三四爻作下卦，三四五爻作上卦产生新的卦，这就是互卦。
@@ -133,7 +117,6 @@ if (overlappingHexagram == originalHexagram)
     overlappingHexagram = changedHexagram.Hugua();
 // 《梅花易数》：乾坤无互互其变卦
 // If the original is Qian or Kun, which does not have a overlapping hexagram, use the changed's instead. 
-
 #endregion
 
 #region 将三个卦打印出来 Print the three hexagrams
@@ -154,11 +137,9 @@ Console.WriteLine();
 Console.WriteLine("变卦 THE CHANGED");
 PrintHexagram(changedHexagram);
 Console.WriteLine();
-
 #endregion
 
 #region 查询《周易》及《易传》 Looking it up in Zhouyi and Yizhuan
-
 var storeUri = "https://yueyinqiu.github.io/my-yijing-annotation-stores/975345ca/2023-08-02-1.json";
 using var client = new HttpClient();
 var zhouyi = await client.GetFromJsonAsync<ZhouyiStore>(storeUri);
@@ -166,7 +147,7 @@ Debug.Assert(zhouyi is not null);
 // 初始化 ZhouyiStore 。
 // 这里是从网上下载了一个注解仓库，当然也可以使用本地文件之类。
 // Initialize ZhouyiStore.
-// Here the annotation store is downloaded from the internet,
+// Here the annotation store is downloaded from the internet.
 // You can also load it from elsewhere such as from a local file.
 
 ZhouyiHexagram originalInZhouyi = zhouyi.GetHexagram(originalHexagram);
@@ -199,17 +180,13 @@ Console.WriteLine($"象曰：{changingLine.Xiang}");
 ## 输出样例 Sample Output
 
 ```plain
-2023/08/05 11:26
-
-二〇二三年六月十九
-
 本卦 THE ORIGINAL
 -----
 -----
 -- --
 -- --
 -- --
------
+-- --
 
 互卦 THE OVERLAPPING
 -----
@@ -225,9 +202,9 @@ Console.WriteLine($"象曰：{changingLine.Xiang}");
 -- --
 -- --
 -- --
------
+-- --
 
-益之屯，互艮坤。
-易曰：莫益之或击之立心勿恒凶
-象曰：莫益之偏辞也或击之自外来也
+观之比，互艮坤。
+易曰：观其生君子无咎
+象曰：观其生志未平也
 ```
