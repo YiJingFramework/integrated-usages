@@ -1,91 +1,92 @@
-﻿using ChineseLunisolarCalendarYjFwkExtensions.Extensions;
-using System.Diagnostics;
-using System.Globalization;
+﻿using System.Diagnostics;
 using System.Net.Http.Json;
 using YiJingFramework.Annotating.Zhouyi;
 using YiJingFramework.Annotating.Zhouyi.Entities;
 using YiJingFramework.EntityRelations.GuaDerivations.Extensions;
+using YiJingFramework.Nongli.Lunar;
 using YiJingFramework.PrimitiveTypes;
 using YiJingFramework.PrimitiveTypes.GuaWithFixedCount;
 
 DateTime dateTime = DateTime.Now;
 
-#region 获取年月日时数 Get the number of year, month, day and hour
-var chineseCalendar = new ChineseLunisolarCalendar();
+#region 获取年月日时数 Get the Shus (numbers) of Nian (year), Yue (month), Ri (day) and Shi (hour)
+LunarDateTime nongliDateTime = LunarDateTime.FromGregorian(dateTime);
+// 取农历年月日时。
+// Get the date and time of Nongli.
 
-var (_, yearDizhi) = chineseCalendar.GetYearGanzhi(dateTime);
-int yearNumber = yearDizhi.Index;
+int nianshu = nongliDateTime.Nian.Dizhi.Index;
 // 《梅花易数》：如子年一数丑年二数直至亥年十二数
-// The year number will be 1 if it's in the years of Zi, 2 in Chou (usually considered the second), ..., 12 in Hai (usually considered the 12th).
+// The Nianshu will be 1 if it's the Nian of Zi, 2 if Chou, ..., 12 if Hai.
 
-int monthNumber = chineseCalendar.GetMonth(dateTime);
+int yueshu = nongliDateTime.Yue;
 // 《梅花易数》：月如正月一数直至十二月亦作十二数
-// 书中没有给出闰月的处理方法，此处简单起见也不另加处理了。
-// The month number is the 1-based index of the (lunar) month.
-// Leap months are not mentioned in the book. To make it simpler, no additional actions are taken here.
+// The Yueshu is the 1-based index of the Yue.
 
-int dayNumber = chineseCalendar.GetDayOfMonth(dateTime);
+int rishu = nongliDateTime.Ri;
 // 《梅花易数》：日数如初一一数直至三十日为三十数
-// just like the month number
+// The Rishu is the 1-based index of the Ri.
 
-int timeNumber = chineseCalendar.GetShichenDizhi(dateTime).Index;
+int shishu = nongliDateTime.Shi.Index;
 // 《梅花易数》：时如子时一数直至亥时为十二数
-// just like the year number
+// The Shishu will be 1 if it's the Shi of Zi, 2 if Chou, ..., 12 if Hai.
 #endregion
 
-#region 算卦数 Calculate the numbers of the hexagrams
-int upperNumber = (yearNumber + monthNumber + dayNumber) % 8;
-upperNumber = upperNumber == 0 ? 8 : upperNumber;
+#region 算卦数 Calculate the Guashus (numbers of the Guas)
+int upperGuashu = nianshu + yueshu + rishu;
+int upperGuaIndex = upperGuashu % 8;
+upperGuaIndex = upperGuaIndex == 0 ? 8 : upperGuaIndex;
 // 《梅花易数》：年月日共计几数以八除之以零数作上卦
-// just do as the above two lines to get the index of the upper hexagram
+// just do as the above three lines to get the upper Guashu and the index of the upper Gua (trigram)
 
-int lowerNumber = (yearNumber + monthNumber + dayNumber + timeNumber) % 8;
-lowerNumber = lowerNumber == 0 ? 8 : lowerNumber;
+int lowerGuashu = nianshu + yueshu + rishu + shishu;
+int lowerGuaIndex = lowerGuashu % 8;
+lowerGuaIndex = lowerGuaIndex == 0 ? 8 : lowerGuaIndex;
 // 《梅花易数》：年月日数加时之数总计几数以八除之零数作下卦
-// just do as the above two lines to get the index of the lower hexagram
+// just do as the above three lines to get the lower Guashu and the index of the lower Gua (trigram)
 
-int changingLineIndex = (yearNumber + monthNumber + dayNumber + timeNumber) % 6;
-changingLineIndex = changingLineIndex == 0 ? 6 : changingLineIndex;
+int guashu = lowerGuashu;
+int dongyaoIndex = guashu % 6;
+dongyaoIndex = dongyaoIndex == 0 ? 6 : dongyaoIndex;
 // 《梅花易数》：就以除六数作动爻
-// just do as the above two lines to get the index of the changing line
+// just do as the above three lines to get the total Guashu and the index of the Dongyao (changing line)
 #endregion
 
-#region 取本卦卦画 Get the original hexagram
-static GuaTrigram GetTrigram(int numberXiantian)
+#region 取本卦卦画 Get the Bengua (the original hexagram)
+static GuaTrigram GetTrigram(int xiantanIndex)
 {
-    numberXiantian--;
-    Debug.Assert(numberXiantian is >= 0b000 and <= 0b111);
+    xiantanIndex--;
+    Debug.Assert(xiantanIndex is >= 0b000 and <= 0b111);
     return new GuaTrigram(
-        new Yinyang((numberXiantian & 0b100) is 0),
-        new Yinyang((numberXiantian & 0b010) is 0),
-        new Yinyang((numberXiantian & 0b001) is 0));
+        new Yinyang((xiantanIndex & 0b100) is 0),
+        new Yinyang((xiantanIndex & 0b010) is 0),
+        new Yinyang((xiantanIndex & 0b001) is 0));
 }
 // 这是通过先天八卦数获取画卦的数学方法。
 // 也可以直接查表：1->☰ 2->☱ 3->☲ 4->☳ 5->☴ 6->☵ 7->☶ 8->☷
-// This is a mathematical method to get the painting through the Xiantian number.
-// You can also directly do this by mapping：1->☰ 2->☱ 3->☲ 4->☳ 5->☴ 6->☵ 7->☶ 8->☷
+// This is a mathematical method to get the painting through the Xiantian indexes.
+// It can also be done directly by mapping：1->☰ 2->☱ 3->☲ 4->☳ 5->☴ 6->☵ 7->☶ 8->☷
 
-GuaTrigram upperTrigram = GetTrigram(upperNumber);
-GuaTrigram lowerTrigram = GetTrigram(lowerNumber);
+GuaTrigram upperGua = GetTrigram(upperGuaIndex);
+GuaTrigram lowerGua = GetTrigram(lowerGuaIndex);
 // 获取上卦和下卦的卦画。
-// Get the paintings of the upper and the lower trigram.
+// Get the paintings of the upper and the lower Guas (trigrams).
 
-IEnumerable<Yinyang> originalLines = lowerTrigram.Concat(upperTrigram);
-GuaHexagram originalHexagram = new GuaHexagram(originalLines);
+IEnumerable<Yinyang> linesOfBengua = lowerGua.Concat(upperGua);
+GuaHexagram bengua = new GuaHexagram(linesOfBengua);
 // 将上卦下卦放在一起得到一个六爻卦，这就是本卦。
-// Put the trigrams together to get a hexagram, which is called the original hexagram.
+// Put the two Guas (trigrams) together to get a Gua (hexagram), which is called Bengua (the original hexagram).
 #endregion
 
-#region 取变卦卦画 Get the changed hexagram
-GuaHexagram changedHexagram = originalHexagram.ChangeLines(changingLineIndex - 1);
+#region 取变卦卦画 Get the Biangua (the changed hexagram)
+GuaHexagram biangua = bengua.ChangeLines(dongyaoIndex - 1);
 // 这里使用了 YiJingFramework.EntityRelations 提供的拓展方法，
 // 把对应的爻阴阳性质改变，返回新的卦，即变卦。
-// Here we used the extension method provided by the YiJingFramework.EntityRelations.
-// The specific line's yin-yang attribute has been changed and a new hexagram has returned, which is called as the changed hexagram.
+// Here we use the extension method provided by the YiJingFramework.EntityRelations.
+// The specific line's Yinyang attribute has been changed and a new Gua (hexgram) has been returned, which is called Biangua (the changed hexagram).
 #endregion
 
-#region 取互卦卦画 Get the overlapping hexagram
-GuaHexagram overlappingHexagram = originalHexagram.Hugua();
+#region 取互卦卦画 Get the Hugua (the overlapping hexagram)
+GuaHexagram hugua = bengua.Hugua();
 // 仍是 YiJingFramework.EntityRelations 包提供的拓展方法，
 // 二三四爻作下卦，三四五爻作上卦产生新的卦，这就是互卦。
 // It's also an extension method provided by the YiJingFramework.EntityRelations package.
@@ -93,31 +94,31 @@ GuaHexagram overlappingHexagram = originalHexagram.Hugua();
 // the second line, the third line, the fourth line,
 // then the third line again, the fourth line again and the fifth line 
 // -- of the original hexagram.
-// This new hexagram is the so-called overlapping hexagram.
+// This new hexagram is the so-called Hugua (the overlapping hexagram).
 
-if (overlappingHexagram == originalHexagram)
-    overlappingHexagram = changedHexagram.Hugua();
+if (hugua == bengua)
+    hugua = biangua.Hugua();
 // 《梅花易数》：乾坤无互互其变卦
-// If the original is Qian or Kun, which does not have a overlapping hexagram, use the changed's instead. 
+// If the Bengua is Qian or Kun, which does not have a Hugua, we should use the Biangua's Hugua instead. 
 #endregion
 
-#region 将三个卦打印出来 Print the three hexagrams
-static void PrintHexagram(GuaHexagram hexagram)
+#region 将三个卦打印出来 Print the three Guas (hexagrams)
+static void PrintGua(GuaHexagram gua)
 {
     for (int i = 5; i >= 0; i--)
-        Console.WriteLine(hexagram[i].IsYang ? "-----" : "-- --");
+        Console.WriteLine(gua[i].IsYang ? "-----" : "-- --");
 }
 
-Console.WriteLine("本卦 THE ORIGINAL");
-PrintHexagram(originalHexagram);
+Console.WriteLine("本卦 BENGUA");
+PrintGua(bengua);
 Console.WriteLine();
 
-Console.WriteLine("互卦 THE OVERLAPPING");
-PrintHexagram(overlappingHexagram);
+Console.WriteLine("互卦 HUGUA");
+PrintGua(hugua);
 Console.WriteLine();
 
-Console.WriteLine("变卦 THE CHANGED");
-PrintHexagram(changedHexagram);
+Console.WriteLine("变卦 BIANGUA");
+PrintGua(biangua);
 Console.WriteLine();
 #endregion
 
@@ -132,28 +133,28 @@ Debug.Assert(zhouyi is not null);
 // Here the annotation store is downloaded from the internet.
 // You can also load it from elsewhere such as from a local file.
 
-ZhouyiHexagram originalInZhouyi = zhouyi.GetHexagram(originalHexagram);
-ZhouyiHexagramLine changingLine = originalInZhouyi.EnumerateLines().ElementAt(changingLineIndex - 1);
-ZhouyiHexagram changedInZhouyi = zhouyi.GetHexagram(changedHexagram);
-ZhouyiHexagram overlappingInZhouyi = zhouyi.GetHexagram(overlappingHexagram);
+ZhouyiHexagram benguaInZhouyi = zhouyi.GetHexagram(bengua);
+ZhouyiHexagramLine dongyao = benguaInZhouyi.EnumerateLines().ElementAt(dongyaoIndex - 1);
+ZhouyiHexagram bianguaInZhouyi = zhouyi.GetHexagram(biangua);
+ZhouyiHexagram huguaInZhouyi = zhouyi.GetHexagram(hugua);
 
-Console.Write($"{originalInZhouyi.Name}之{changedInZhouyi.Name}，");
-// Console.Write($"It's {originalInZhouyi.Name} changing to {changedInZhouyi.Name}, ");
+Console.Write($"{benguaInZhouyi.Name}之{bianguaInZhouyi.Name}，");
+// Console.Write($"It's {benguaInZhouyi.Name} changing to {bianguaInZhouyi.Name}, ");
 
-(ZhouyiTrigram overlappingUpper, ZhouyiTrigram overlappingLower) = overlappingInZhouyi.SplitToTrigrams(zhouyi);
-if (overlappingUpper.Painting == overlappingLower.Painting)
+(ZhouyiTrigram huguaUpper, ZhouyiTrigram huguaLower) = huguaInZhouyi.SplitToTrigrams(zhouyi);
+if (huguaUpper.Painting == huguaLower.Painting)
 {
-    Console.WriteLine($"互重{overlappingUpper.Name}。");
-    // Console.Write($"and doubled {overlappingUpperInZhouyi.Name} as the overlapping.");
+    Console.WriteLine($"互重{huguaUpper.Name}。");
+    // Console.WriteLine($"and doubled {huguaUpper.Name} as the Hugua.");
 }
 else
 {
-    Console.WriteLine($"互{overlappingUpper.Name}{overlappingLower.Name}。");
-    // Console.Write($"and {overlappingUpperInZhouyi.Name} with {overlappingLowerInZhouyi.Name} as the overlapping.");
+    Console.WriteLine($"互{huguaUpper.Name}{huguaLower.Name}。");
+    // Console.WriteLine($"and {huguaUpper.Name} with {huguaLower.Name} as the Hugua.");
 }
 
-Console.WriteLine($"易曰：{changingLine.LineText}");
-// Console.WriteLine($"Zhouyi: {changingLine.LineText}");
-Console.WriteLine($"象曰：{changingLine.Xiang}");
-// Console.WriteLine($"And xiang: {changingLine.Xiang}");
+Console.WriteLine($"易曰：{dongyao.LineText}");
+// Console.WriteLine($"Zhouyi: {dongyao.LineText}");
+Console.WriteLine($"象曰：{dongyao.Xiang}");
+// Console.WriteLine($"And Xiang: {dongyao.Xiang}");
 #endregion
