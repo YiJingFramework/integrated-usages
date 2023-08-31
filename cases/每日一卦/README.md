@@ -2,7 +2,7 @@
 
 此用例打开即会显示六十四卦中的一卦（一天内每次打开都相同，每天打开会有所不同），提供卦画、卦爻辞、彖传象传辞，并提供其变卦、错卦、互卦、综卦的相关信息。
 
-When this use case is opened, one of the hexagrams will be shown (it will be the same in a day, but could be in different days). This use case provides its paintings, text in Zhouyi and Yizhuan, as well as the information of the changed hexagrams, the laterally linked hexagram, the overlapping hexagram, and overturned hexagram of it.
+When this use case is opened, one of the hexagrams will be shown (it will be the same in a day, but could be in different days). This use case provides its paintings, text in Zhouyi and Yizhuan, as well as the information of its Biangua, Cuogua, Hugua, and Zonggua.
 
 ## 使用的包 Used Packages
 
@@ -45,10 +45,10 @@ internal static class Program
             Console.WriteLine("4. 获取综卦。");
             Console.WriteLine("e. 退出");
             Console.WriteLine();
-            Console.WriteLine("1. Change some of the lines. Numbers from 1 to 6 are required to indicate the changing lines (like `1 3 4` to change the third and the fourth line)");
-            Console.WriteLine("2. Get the laterally linked hexagram.");
-            Console.WriteLine("3. Get the overlapping hexagram.");
-            Console.WriteLine("4. Get the overturned hexagram.");
+            Console.WriteLine("1. Change some of the Yaos (lines). Numbers from 1 to 6 are required to indicate the changing Yaos (like `1 3 4` to change the third and the fourth Yao)");
+            Console.WriteLine("2. Get the Cuogua (the laterally linked hexagram).");
+            Console.WriteLine("3. Get the Hugua (the overlapping hexagram).");
+            Console.WriteLine("4. Get the Zonggua (overturned hexagram).");
             Console.WriteLine("e. Exit");
             Console.WriteLine();
             Console.WriteLine("==================================");
@@ -107,8 +107,8 @@ internal static class Program
                 yield return (Yinyang)random.Next(0, 2);
         }
 
-        var randomLines = RandomYinYangs(date.DayNumber).Take(6);
-        return new GuaHexagram(randomLines);
+        var randomYaos = RandomYinYangs(date.DayNumber).Take(6);
+        return new GuaHexagram(randomYaos);
     }
 
     private static void PrintGua(
@@ -135,20 +135,20 @@ internal static class Program
         Console.WriteLine($"彖曰：{hexagram.Tuan}");
         Console.WriteLine();
 
-        var lineTextPadding = hexagram.EnumerateLines()
-            .Select(line => line.LineText?.Length ?? 0)
+        var textPadding = hexagram.EnumerateYaos()
+            .Select(yao => yao.YaoText?.Length ?? 0)
             .Max() + 2;
 
-        foreach (var line in hexagram.EnumerateLines().Reverse())
+        foreach (var yao in hexagram.EnumerateYaos().Reverse())
         {
-            var figure = line.YinYang?.IsYang switch
+            var figure = yao.YinYang?.IsYang switch
             {
                 true => "-----   ",
                 false => "-- --   ",
                 null => "        "
             };
-            var text = line.LineText?.PadRight(lineTextPadding, '　');
-            Console.WriteLine($"{figure}{text}{line.Xiang}");
+            var text = yao.YaoText?.PadRight(textPadding, '　');
+            Console.WriteLine($"{figure}{text}{yao.Xiang}");
         }
         Console.WriteLine();
     }
@@ -170,23 +170,23 @@ internal static class Program
             values.Add(value);
             valuesMinus1.Add(value - 1);
         }
-        var result = gua.ChangeLines(valuesMinus1, false);
-        return (result, $"变卦 Changed ({string.Join(' ', values)})");
+        var result = gua.ChangeYaos(valuesMinus1, false);
+        return (result, $"变卦 Biangua ({string.Join(' ', values)})");
     }
 
     private static (GuaHexagram?, string) ApplyDerivation2(GuaHexagram gua)
     {
-        return (gua.Cuogua(), "错卦 Laterally Linked");
+        return (gua.Cuogua(), "错卦 Cuogua");
     }
 
     private static (GuaHexagram?, string) ApplyDerivation3(GuaHexagram gua)
     {
-        return (gua.Hugua(), "互卦 Overlapping");
+        return (gua.Hugua(), "互卦 Hugua");
     }
 
     private static (GuaHexagram?, string) ApplyDerivation4(GuaHexagram gua)
     {
-        return (gua.Zonggua(), "综卦 Overturned");
+        return (gua.Zonggua(), "综卦 Zonggua");
     }
 }
 ```
@@ -198,20 +198,20 @@ internal static class Program
 This use case contains human-computer interaction, so only part of the output is provided here.
 
 ```plain
-2023年 8月 5日   每日一卦 A Hexagram Per Day
+2023年 8月 31日   每日一卦 A Hexagram Per Day
 
-泽水困
-困，亨贞大人吉无咎有言不信
-象曰：泽无水困君子以致命遂志
-彖曰：困刚掩也险以说困而不失其所亨其唯君子乎贞大人吉以刚中也有言不信尚口乃穷也
+水火既济
+既济，亨小利贞初吉终乱
+象曰：水在火上既济君子以思患而豫防之
+彖曰：既济亨小者亨也利贞刚柔正而位当也初吉柔得中也终止则乱其道穷也
 
 
--- --   困于葛藟于臲卼曰动悔有悔征吉　　　　困于葛藟未当也动悔有悔吉行也
------   劓刖困于赤绂乃徐有说利用祭祀　　　　劓刖志未得也乃徐有说以中直也利用祭祀受福也
------   来徐徐困于金车吝有终　　　　　　　　来徐徐志在下也虽不当位有与也
--- --   困于石据于蒺藜入于其宫不见其妻凶　　据于蒺藜乘刚也入于其宫不见其妻不祥也
------   困于酒食朱绂方来利用亨祀征凶无咎　　困于酒食中有庆也
--- --   臀困于株木入于幽谷三岁不见　　　　　入于幽谷幽不明也
+-- --   濡其首厉　　　　　　　　　　　　　濡其首厉何可久也
+-----   东邻杀牛不如西邻之禴祭实受其福　　东邻杀牛不如西邻之时也实受其福吉大来也
+-- --   繻有衣袽终日戒　　　　　　　　　　终日戒有所疑也
+-----   高宗伐鬼方三年克之小人勿用　　　　三年克之惫也
+-- --   妇丧其茀勿逐七日得　　　　　　　　七日得以中道也
+-----   曳其轮濡其尾无咎　　　　　　　　　曳其轮义无咎也
 
 ==================================
 
@@ -221,17 +221,40 @@ This use case contains human-computer interaction, so only part of the output is
 4. 获取综卦。
 e. 退出
 
-1. Change some of the lines. Numbers from 1 to 6 are required to indicate the changing lines (like `1 3 4` to change the third and the fourth line)
-2. Get the laterally linked hexagram.
-3. Get the overlapping hexagram.
-4. Get the overturned hexagram.
+1. Change some of the Yaos (lines). Numbers from 1 to 6 are required to indicate the changing Yaos (like `1 3 4` to change the third and the fourth Yao)
+2. Get the Cuogua (the laterally linked hexagram).
+3. Get the Hugua (the overlapping hexagram).
+4. Get the Zonggua (overturned hexagram).
 e. Exit
 
 ==================================
 ```
 
 ```plain
-2023年 8月 5日   变卦 Changed (1 3 6)
+2023年 8月 31日   互卦 Hugua
+
+火水未济
+未济，亨小狐汔济濡其尾无攸利
+象曰：火在水上未济君子以慎辨物居方
+彖曰：未济亨柔得中也小狐汔济未出中也濡其尾无攸利不续终也虽不当位刚柔应也
+
+
+-----   有孚于饮酒无咎濡其首有孚失是　　　　饮酒濡首亦不知节也
+-- --   贞吉无悔君子之光有孚吉　　　　　　　君子之光其晖吉也
+-----   贞吉悔亡震用伐鬼方三年有赏于大国　　贞吉悔亡志行也
+-- --   未济征凶利涉大川　　　　　　　　　　未济征凶位不当也
+-----   曳其轮贞吉　　　　　　　　　　　　　九二贞吉中以行正也
+-- --   濡其尾吝　　　　　　　　　　　　　　濡其尾亦不知极也
+
+==================================
+
+输入任意内容以返回 Input Anything To Get Back
+
+==================================
+```
+
+```plain
+2023年 8月 31日   变卦 Biangua (2 4 6)
 
 乾为天
 乾，元亨利贞
@@ -245,29 +268,6 @@ e. Exit
 -----   君子终日乾乾夕惕若厉无咎　　终日乾乾反复道也
 -----   见龙在田利见大人　　　　　　见龙在田德施普也
 -----   潜龙勿用　　　　　　　　　　潜龙勿用阳在下也
-
-==================================
-
-输入任意内容以返回 Input Anything To Get Back
-
-==================================
-```
-
-```plain
-2023年 8月 5日   综卦 Overturned
-
-水风井
-井，改邑不改井无丧无得往来井井汔至亦未繘井羸其瓶凶
-象曰：木上有水井君子以劳民劝相
-彖曰：巽乎水而上水井井养而不穷也改邑不改井乃以刚中也汔至亦未繘井未有功也羸其瓶是以凶也
-
-
--- --   井收勿幕有孚元吉　　　　　　　　　　　元吉在上大成也
------   井冽寒泉食　　　　　　　　　　　　　　寒泉之食中正也
--- --   井甃无咎　　　　　　　　　　　　　　　井甃无咎修井也
------   井渫不食为我心恻可用汲王明并受其福　　井渫不食行恻也求王明受福也
------   井谷射鲋瓮敝漏　　　　　　　　　　　　井谷射鲋无与也
--- --   井泥不食旧井无禽　　　　　　　　　　　井泥不食下也旧井无禽时舍也
 
 ==================================
 

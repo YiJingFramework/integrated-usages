@@ -27,10 +27,10 @@ internal static class Program
             Console.WriteLine("4. 获取综卦。");
             Console.WriteLine("e. 退出");
             Console.WriteLine();
-            Console.WriteLine("1. Change some of the lines. Numbers from 1 to 6 are required to indicate the changing lines (like `1 3 4` to change the third and the fourth line)");
-            Console.WriteLine("2. Get the laterally linked hexagram.");
-            Console.WriteLine("3. Get the overlapping hexagram.");
-            Console.WriteLine("4. Get the overturned hexagram.");
+            Console.WriteLine("1. Change some of the Yaos (lines). Numbers from 1 to 6 are required to indicate the changing Yaos (like `1 3 4` to change the third and the fourth Yao)");
+            Console.WriteLine("2. Get the Cuogua (the laterally linked hexagram).");
+            Console.WriteLine("3. Get the Hugua (the overlapping hexagram).");
+            Console.WriteLine("4. Get the Zonggua (overturned hexagram).");
             Console.WriteLine("e. Exit");
             Console.WriteLine();
             Console.WriteLine("==================================");
@@ -89,8 +89,8 @@ internal static class Program
                 yield return (Yinyang)random.Next(0, 2);
         }
 
-        var randomLines = RandomYinYangs(date.DayNumber).Take(6);
-        return new GuaHexagram(randomLines);
+        var randomYaos = RandomYinYangs(date.DayNumber).Take(6);
+        return new GuaHexagram(randomYaos);
     }
 
     private static void PrintGua(
@@ -117,20 +117,20 @@ internal static class Program
         Console.WriteLine($"彖曰：{hexagram.Tuan}");
         Console.WriteLine();
 
-        var lineTextPadding = hexagram.EnumerateLines()
-            .Select(line => line.LineText?.Length ?? 0)
+        var textPadding = hexagram.EnumerateYaos()
+            .Select(yao => yao.YaoText?.Length ?? 0)
             .Max() + 2;
 
-        foreach (var line in hexagram.EnumerateLines().Reverse())
+        foreach (var yao in hexagram.EnumerateYaos().Reverse())
         {
-            var figure = line.YinYang?.IsYang switch
+            var figure = yao.YinYang?.IsYang switch
             {
                 true => "-----   ",
                 false => "-- --   ",
                 null => "        "
             };
-            var text = line.LineText?.PadRight(lineTextPadding, '　');
-            Console.WriteLine($"{figure}{text}{line.Xiang}");
+            var text = yao.YaoText?.PadRight(textPadding, '　');
+            Console.WriteLine($"{figure}{text}{yao.Xiang}");
         }
         Console.WriteLine();
     }
@@ -152,22 +152,22 @@ internal static class Program
             values.Add(value);
             valuesMinus1.Add(value - 1);
         }
-        var result = gua.ChangeLines(valuesMinus1, false);
-        return (result, $"变卦 Changed ({string.Join(' ', values)})");
+        var result = gua.ChangeYaos(valuesMinus1, false);
+        return (result, $"变卦 Biangua ({string.Join(' ', values)})");
     }
 
     private static (GuaHexagram?, string) ApplyDerivation2(GuaHexagram gua)
     {
-        return (gua.Cuogua(), "错卦 Laterally Linked");
+        return (gua.Cuogua(), "错卦 Cuogua");
     }
 
     private static (GuaHexagram?, string) ApplyDerivation3(GuaHexagram gua)
     {
-        return (gua.Hugua(), "互卦 Overlapping");
+        return (gua.Hugua(), "互卦 Hugua");
     }
 
     private static (GuaHexagram?, string) ApplyDerivation4(GuaHexagram gua)
     {
-        return (gua.Zonggua(), "综卦 Overturned");
+        return (gua.Zonggua(), "综卦 Zonggua");
     }
 }
