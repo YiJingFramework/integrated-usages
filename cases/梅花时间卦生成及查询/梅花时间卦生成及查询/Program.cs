@@ -19,7 +19,7 @@ Console.WriteLine();
 // 取农历年月日时。
 // Get the date and time of Nongli.
 
-var nianshu = (int)lunar.Nian.Dizhi;
+var nianshu = lunar.Nian.Dizhi.Index;
 // 《梅花易数》：如子年一数丑年二数直至亥年十二数
 // The Nianshu will be 1 if it's the Nian of Zi, 2 if Chou, ..., 12 if Hai.
 
@@ -31,7 +31,7 @@ var rishu = lunar.Ri;
 // 《梅花易数》：日数如初一一数直至三十日为三十数
 // The Rishu is the 1-based index of the Ri.
 
-var shishu = (int)lunar.Shi;
+var shishu = lunar.Shi.Index;
 // 《梅花易数》：时如子时一数直至亥时为十二数
 // The Shishu will be 1 if it's the Shi of Zi, 2 if Chou, ..., 12 if Hai.
 #endregion
