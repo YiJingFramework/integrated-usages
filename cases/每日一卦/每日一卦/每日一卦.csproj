@@ -8,8 +8,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="YiJingFramework.Annotating.Zhouyi" Version="6.0.0" />
-    <PackageReference Include="YiJingFramework.EntityRelations" Version="3.0.0" />
+    <PackageReference Include="YiJingFramework.Annotating.Zhouyi" Version="6.0.1" />
+    <PackageReference Include="YiJingFramework.EntityRelations" Version="3.1.0" />
   </ItemGroup>
 
 </Project>
