@@ -143,16 +143,14 @@ internal static class Program
     private static (GuaHexagram?, string) ApplyDerivation1(
         GuaHexagram gua, IEnumerable<string> args)
     {
-        List<int> values = new List<int>();
-        List<int> valuesMinus1 = new List<int>();
+        List<int> values = [];
         foreach (var str in args)
         {
             if (!int.TryParse(str, out int value))
                 return (null, "参数错误 Invalid Arguments");
             values.Add(value);
-            valuesMinus1.Add(value - 1);
         }
-        var result = gua.ChangeYaos(valuesMinus1, false);
+        var result = gua.ChangeYaos(values.Select(x => x - 1), false);
         return (result, $"变卦 Biangua ({string.Join(' ', values)})");
     }
 
